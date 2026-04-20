@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Выживи сезон с томатом</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-blur bg-blur--left"></div>
+  <div class="bg-blur bg-blur--right"></div>
+
+  <main class="app shell">
+    <section id="screen-start" class="screen screen--active card card--hero">
+      <span class="eyebrow">Сезонный симулятор</span>
+      <h1>Выживи сезон с томатом</h1>
+      <p class="subtitle">У тебя один куст. И примерно 8 недель, чтобы не испортить ему жизнь.</p>
+      <button id="start-btn" class="btn btn--primary">Начать сезон</button>
+    </section>
+
+    <section id="screen-variety" class="screen card">
+      <div class="screen-head">
+        <span class="eyebrow">Шаг 1</span>
+        <h2>Выбери сорт</h2>
+        <p>У каждого томата свой характер. Как и у тебя, если честно.</p>
+      </div>
+      <div id="variety-list" class="variety-grid"></div>
+      <button id="confirm-variety-btn" class="btn btn--primary" disabled>Выбрать и поехать дальше</button>
+    </section>
+
+    <section id="screen-game" class="screen card">
+      <div class="game-top">
+        <div>
+          <span class="eyebrow">Неделя <span id="week-label">1</span> / 8</span>
+          <h2 id="plant-name">Твой томат</h2>
+        </div>
+        <div id="vibe-badge" class="vibe-badge">Нормально держитесь</div>
+      </div>
+
+      <div class="stats-wrap">
+        <div id="stats-list" class="stats-list"></div>
+      </div>
+
+      <article class="event-card">
+        <h3 id="event-title">Событие недели</h3>
+        <p id="event-text"></p>
+        <div id="choices-list" class="choices-list"></div>
+      </article>
+
+      <aside class="live-log">
+        <div class="live-log__head">Живой комментарий</div>
+        <p id="live-comment"></p>
+      </aside>
+    </section>
+
+    <section id="screen-end" class="screen card card--final">
+      <div class="final-content">
+        <span class="eyebrow">Финал сезона</span>
+        <h2 id="final-title"></h2>
+        <p id="final-subtitle"></p>
+
+        <div id="final-metrics" class="final-metrics"></div>
+
+        <div class="final-actions">
+          <button id="save-card-btn" class="btn btn--primary">Скачать карточку результата</button>
+          <button id="restart-btn" class="btn btn--ghost">Сыграть ещё раз</button>
+        </div>
+      </div>
+
+      <div id="share-card" class="share-card">
+        <div class="share-card__top">
+          <span class="share-chip">Выживи сезон с томатом</span>
+          <span id="share-variety" class="share-variety"></span>
+        </div>
+        <h3 id="share-headline"></h3>
+        <p id="share-summary"></p>
+        <div class="share-stats">
+          <div><span>Здоровье</span><strong id="share-health"></strong></div>
+          <div><span>Баланс</span><strong id="share-balance"></strong></div>
+          <div><span>Урожай</span><strong id="share-yield"></strong></div>
+          <div><span>Стресс</span><strong id="share-stress"></strong></div>
+        </div>
+        <div class="share-footer">
+          <span id="share-style"></span>
+          <span>#tomato-survival</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
