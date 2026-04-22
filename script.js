@@ -962,7 +962,7 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [28, 25, 21, 17, 13, 9, 5, 3, 1, 0, 0, 0];
+  const spriteLiftByStep = [28, 25, 21, 17, 19, 22, 16, 14, 14, 18, 17, 11];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 6;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
