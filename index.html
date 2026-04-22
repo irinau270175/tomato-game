@@ -6,92 +6,235 @@
   <title>Выживи сезон с томатом</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="bg-blur bg-blur--left"></div>
-  <div class="bg-blur bg-blur--right"></div>
+  <main class="app">
+    <section id="screen-start" class="screen screen--active card start">
+      <p id="start-tag" class="tag">Визуальная мини-игра</p>
+      <h1 id="start-title">Выживи сезон<br>с томатом 🍅</h1>
+      <p id="start-hint" class="hint">Просто смотри на куст и помогай ему.</p>
 
-  <main class="app shell">
-    <section id="screen-start" class="screen screen--active card card--hero">
-      <span class="eyebrow">Сезонный симулятор</span>
-      <h1>Выживи сезон с томатом</h1>
-      <p class="subtitle">У тебя один куст. И примерно 8 недель, чтобы не испортить ему жизнь.</p>
-      <button id="start-btn" class="btn btn--primary">Начать сезон</button>
-    </section>
-
-    <section id="screen-variety" class="screen card">
-      <div class="screen-head">
-        <span class="eyebrow">Шаг 1</span>
-        <h2>Выбери сорт</h2>
-        <p>У каждого томата свой характер. Как и у тебя, если честно.</p>
-      </div>
-      <div id="variety-list" class="variety-grid"></div>
-      <button id="confirm-variety-btn" class="btn btn--primary" disabled>Выбрать и поехать дальше</button>
-    </section>
-
-    <section id="screen-game" class="screen card">
-      <div class="game-top">
-        <div>
-          <span class="eyebrow">Неделя <span id="week-label">1</span> / 8</span>
-          <h2 id="plant-name">Твой томат</h2>
-        </div>
-        <div id="vibe-badge" class="vibe-badge">Нормально держитесь</div>
-      </div>
-
-      <div class="stats-wrap">
-        <div id="stats-list" class="stats-list"></div>
-      </div>
-
-      <article class="event-card">
-        <h3 id="event-title">Событие недели</h3>
-        <p id="event-text"></p>
-        <div id="choices-list" class="choices-list"></div>
+      <article id="start-rules" class="rules">
+        <h3 id="rules-title">Как играть</h3>
+        <ol id="rules-list">
+          <li class="rules-item">Выбери, где растёт томат: теплица или открытый грунт.</li>
+          <li class="rules-item">На каждом этапе смотри на состояние куста и выбирай ОДНО главное действие.</li>
+          <li class="rules-item">Доведи растение до урожая и собери как можно больше томатов или вырасти самый гигантский плод.</li>
+        </ol>
+        <p id="rules-tip" class="tip">Подсказка: если куст вянет — он ждёт не мотивационную речь, а полив.</p>
       </article>
 
-      <aside class="live-log">
-        <div class="live-log__head">Живой комментарий</div>
-        <p id="live-comment"></p>
-      </aside>
+      <button id="start-btn" class="btn btn--primary">Старт сезона</button>
     </section>
 
-    <section id="screen-end" class="screen card card--final">
-      <div class="final-content">
-        <span class="eyebrow">Финал сезона</span>
-        <h2 id="final-title"></h2>
-        <p id="final-subtitle"></p>
-
-        <div id="final-metrics" class="final-metrics"></div>
-
-        <div class="final-actions">
-          <button id="save-card-btn" class="btn btn--primary">Скачать карточку результата</button>
-          <button id="restart-btn" class="btn btn--ghost">Сыграть ещё раз</button>
-        </div>
+    <section id="screen-setup" class="screen card">
+      <div class="setup-head">
+        <p id="setup-tag" class="tag">Подготовка</p>
+        <h2 id="setup-title">Выбери сценарий</h2>
       </div>
 
-      <div id="share-card" class="share-card">
-        <div class="share-card__top">
-          <span class="share-chip">Выживи сезон с томатом</span>
-          <span id="share-variety" class="share-variety"></span>
-        </div>
-        <h3 id="share-headline"></h3>
-        <p id="share-summary"></p>
-        <div class="share-stats">
-          <div><span>Здоровье</span><strong id="share-health"></strong></div>
-          <div><span>Баланс</span><strong id="share-balance"></strong></div>
-          <div><span>Урожай</span><strong id="share-yield"></strong></div>
-          <div><span>Стресс</span><strong id="share-stress"></strong></div>
-        </div>
-        <div class="share-footer">
-          <span id="share-style"></span>
-          <span>#tomato-survival</span>
-        </div>
+      <div class="setup-grid">
+        <article class="pick">
+          <h3 id="setup-variety-title">Сорт</h3>
+          <div id="variety-list" class="chips chips--grid"></div>
+        </article>
+
+        <article class="pick">
+          <h3 id="setup-scenario-title">Где растим</h3>
+          <div id="scenario-list" class="chips"></div>
+        </article>
       </div>
+
+      <button id="go-game-btn" class="btn btn--primary" disabled>Высадить рассаду</button>
+    </section>
+
+    <section id="screen-game" class="screen card game game-studio">
+      <aside class="control-panel">
+        <div class="control-top">
+          <p class="tag">Сезон</p>
+          <h2 id="stage-title">Рассада после высадки</h2>
+          <p id="state-line" class="state-line">Состояние: всё спокойно</p>
+          <p id="advice-line" class="advice-line">Совет: поддерживай баланс.</p>
+        </div>
+
+        <div class="mini-stats">
+          <div><span>Этап</span><strong id="progress-value">1/12</strong></div>
+          <div><span>Состояние</span><strong id="state-label">Здоровый</strong></div>
+          <div><span>Урожай</span><strong id="live-count">🍅 0</strong></div>
+          <div><span>Таймер</span><strong id="timer-value">01:00</strong></div>
+          <p id="reaction-line" class="reaction-line reaction-line--inline">Выбери действие для этого этапа.</p>
+        </div>
+      </aside>
+
+      <section class="studio-stage">
+        <section id="scene" class="scene scene--ground">
+          <div class="sky"></div>
+          <div class="sun"></div>
+          <div class="field-glow"></div>
+          <div class="grass-strip"></div>
+          <div class="glass"></div>
+          <div class="heat"></div>
+          <div class="cloud cloud-1"></div>
+          <div class="cloud cloud-2"></div>
+          <div class="cloud cloud-3"></div>
+
+          <div id="plant" class="plant stage-0 mood-healthy">
+            <img id="plant-sprite" class="plant-sprite" src="" alt="Куст томата">
+            <div class="stem"></div>
+            <div class="branch branch-1"></div>
+            <div class="branch branch-2"></div>
+            <div class="branch branch-3"></div>
+            <div class="branch branch-4"></div>
+            <div class="branch branch-5"></div>
+            <div class="leaf leaf-l1"></div>
+            <div class="leaf leaf-r1"></div>
+            <div class="leaf leaf-l2"></div>
+            <div class="leaf leaf-r2"></div>
+            <div class="leaf leaf-top"></div>
+            <div class="leaf leaf-l3"></div>
+            <div class="leaf leaf-r3"></div>
+            <div class="leaf leaf-l4"></div>
+            <div class="leaf leaf-r4"></div>
+            <div class="flower flower-1"></div>
+            <div class="flower flower-2"></div>
+            <div class="fruit fruit-1"></div>
+            <div class="fruit fruit-2"></div>
+            <div class="fruit fruit-3"></div>
+            <div class="fruit fruit-4"></div>
+            <div class="fruit fruit-5"></div>
+            <div class="fruit fruit-6"></div>
+            <div id="giant-fruit" class="fruit giant"></div>
+          </div>
+          <div class="ground"></div>
+
+          <aside class="basket-panel">
+            <div id="live-basket" class="live-basket"></div>
+          </aside>
+        </section>
+      </section>
+
+      <section class="controls action-panel">
+        <div id="quick-actions" class="quick-actions quick-actions--four"></div>
+        <button id="next-step-btn" class="btn btn--primary btn--wide">Пройти этап</button>
+      </section>
+
+      <div id="victory-burst" class="victory-burst"></div>
+      <section id="season-overlay" class="season-overlay">
+        <article id="story-card" class="story-card">
+          <div class="story-glow"></div>
+          <p id="story-title" class="story-title">Сезон завершён</p>
+          <h3 id="arch-type"></h3>
+          <p id="story-meta">—</p>
+          <p id="story-result">—</p>
+          <div class="final-actions">
+            <button id="restart-btn" class="btn btn--primary">Сыграть снова</button>
+            <button id="share-btn" class="btn btn--soft">Поделиться игрой</button>
+          </div>
+          <p id="share-status" class="share-status" aria-live="polite"></p>
+        </article>
+      </section>
+    </section>
+    <button id="admin-open-btn" class="btn btn--ghost admin-open-btn" type="button">Админ</button>
+    <section id="admin-panel" class="admin-panel">
+      <article class="admin-card">
+        <h3>Админ-панель контента</h3>
+        <p class="admin-note">Редактируй JSON, сохрани в черновик и публикуй в игру.</p>
+        <div id="admin-lock" class="admin-lock">
+          <input id="admin-password" class="admin-input" type="password" placeholder="Пароль">
+          <button id="admin-login-btn" class="btn btn--primary" type="button">Войти</button>
+        </div>
+        <div id="admin-editor-wrap" class="admin-editor-wrap">
+          <div class="admin-form-grid">
+            <section class="admin-section">
+              <h4>Стартовая страница</h4>
+              <label>Заголовок (HTML допускается)<input id="admin-start-title" class="admin-input" type="text"></label>
+              <label>Подсказка<input id="admin-start-hint" class="admin-input" type="text"></label>
+              <label>Кнопка старта<input id="admin-start-button" class="admin-input" type="text"></label>
+              <label>Заголовок правил<input id="admin-rules-title" class="admin-input" type="text"></label>
+              <label>Пункт 1 правил<input id="admin-rules-item-0" class="admin-input" type="text"></label>
+              <label>Пункт 2 правил<input id="admin-rules-item-1" class="admin-input" type="text"></label>
+              <label>Пункт 3 правил<input id="admin-rules-item-2" class="admin-input" type="text"></label>
+              <label>Подсказка в правилах<input id="admin-rules-tip" class="admin-input" type="text"></label>
+            </section>
+
+            <section class="admin-section">
+              <h4>Этап игры</h4>
+              <div class="admin-row">
+                <label>Сорт
+                  <select id="admin-variety" class="admin-input">
+                    <option value="loved">Любимые томаты</option>
+                    <option value="giant">Гигантский томат</option>
+                  </select>
+                </label>
+                <label>Этап
+                  <select id="admin-step" class="admin-input"></select>
+                </label>
+              </div>
+              <label>Состояние (state)<input id="admin-step-state" class="admin-input" type="text"></label>
+              <label>Совет (advice)<input id="admin-step-advice" class="admin-input" type="text"></label>
+              <label>Вариант 1<input id="admin-opt-0" class="admin-input" type="text"></label>
+              <label>Вариант 2<input id="admin-opt-1" class="admin-input" type="text"></label>
+              <label>Вариант 3<input id="admin-opt-2" class="admin-input" type="text"></label>
+              <label>Вариант 4<input id="admin-opt-3" class="admin-input" type="text"></label>
+              <label>Правильный ответ (номер)
+                <select id="admin-correct" class="admin-input">
+                  <option value="0">1</option>
+                  <option value="1">2</option>
+                  <option value="2">3</option>
+                  <option value="3">4</option>
+                </select>
+              </label>
+            </section>
+
+            <section class="admin-section">
+              <h4>Тексты UI</h4>
+              <label>«Выбери действие…»<input id="admin-msg-choose" class="admin-input" type="text"></label>
+              <label>«Хороший ход»<input id="admin-msg-good" class="admin-input" type="text"></label>
+              <label>«Пока терпимо…»<input id="admin-msg-bad" class="admin-input" type="text"></label>
+              <label>Кнопка «Пройти этап»<input id="admin-next-btn" class="admin-input" type="text"></label>
+              <label>Кнопка «Сыграть снова»<input id="admin-restart-btn" class="admin-input" type="text"></label>
+              <label>Кнопка «Поделиться игрой»<input id="admin-share-btn" class="admin-input" type="text"></label>
+            </section>
+
+            <section class="admin-section">
+              <h4>Финальное окно</h4>
+              <label>Заголовок финала<input id="admin-final-title" class="admin-input" type="text"></label>
+              <label>Подпись перед строкой meta<textarea id="admin-final-meta-template" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Архетип 1: заголовок<input id="admin-arch-0-title" class="admin-input" type="text"></label>
+              <label>Архетип 1: фраза<textarea id="admin-arch-0-phrase" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Архетип 2: заголовок<input id="admin-arch-1-title" class="admin-input" type="text"></label>
+              <label>Архетип 2: фраза<textarea id="admin-arch-1-phrase" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Архетип 3: заголовок<input id="admin-arch-2-title" class="admin-input" type="text"></label>
+              <label>Архетип 3: фраза<textarea id="admin-arch-2-phrase" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Архетип 4: заголовок<input id="admin-arch-3-title" class="admin-input" type="text"></label>
+              <label>Архетип 4: фраза<textarea id="admin-arch-3-phrase" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Уровень: слабый урожай<input id="admin-level-weak" class="admin-input" type="text"></label>
+              <label>Уровень: хороший урожай<input id="admin-level-good" class="admin-input" type="text"></label>
+              <label>Уровень: супер-урожай<input id="admin-level-top-loved" class="admin-input" type="text"></label>
+              <label>Уровень: гигантский урожай<input id="admin-level-top-giant" class="admin-input" type="text"></label>
+              <label>Текст перед итогом (обычный)<textarea id="admin-final-result-template" class="admin-input admin-input--multiline" rows="2"></textarea></label>
+              <label>Текст перед итогом (таймаут)<textarea id="admin-final-timeout-template" class="admin-input admin-input--multiline" rows="3"></textarea></label>
+            </section>
+          </div>
+          <div class="admin-actions">
+            <button id="admin-prev-step-btn" class="btn btn--ghost" type="button">Этап ←</button>
+            <button id="admin-next-step-btn" class="btn btn--ghost" type="button">Этап →</button>
+            <button id="admin-save-draft-btn" class="btn btn--soft" type="button">Сохранить черновик</button>
+            <button id="admin-publish-btn" class="btn btn--primary" type="button">Опубликовать</button>
+            <button id="admin-export-btn" class="btn btn--ghost" type="button">Экспорт JSON</button>
+            <button id="admin-import-btn" class="btn btn--ghost" type="button">Импорт JSON</button>
+            <button id="admin-close-btn" class="btn btn--ghost" type="button">Закрыть</button>
+            <span id="admin-unsaved-badge" class="admin-unsaved-badge">Есть несохранённые изменения</span>
+          </div>
+          <input id="admin-import-file" type="file" accept=".json,application/json" hidden>
+          <p id="admin-status" class="admin-status"></p>
+        </div>
+      </article>
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

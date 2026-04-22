@@ -1,598 +1,1532 @@
-const TOTAL_WEEKS = 8;
-
-const STAT_META = {
-  health: { label: "health", color: "#58a86e" },
-  water: { label: "water", color: "#4eaad8" },
-  nutrition: { label: "nutrition", color: "#9e8ce8" },
-  stress: { label: "stress", color: "#f08e45" },
-  light: { label: "light", color: "#f1c648" },
-  yield: { label: "yield", color: "#ef5a4c" },
+const STAGE_NAMES = ["Рассада после высадки", "Прижился", "Рост", "Цветение", "Завязь", "Налив плодов", "Спелые томаты"];
+const PLANT_FRAMES = {
+  loved: Array.from({ length: 12 }, (_, i) => `assets/plants/loved/${String(i + 1).padStart(2, "0")}.webp`),
+  giant: Array.from({ length: 12 }, (_, i) => `assets/plants/giant/${String(i + 1).padStart(2, "0")}.webp`),
+};
+const UI_ASSETS = {
+  basket: "assets/ui/basket.webp",
+  flyTomato: "assets/ui/fly-tomato.webp",
+};
+const PREPARED = {
+  frames: {},
+  ui: {},
 };
 
 const VARIETIES = {
-  cherry: {
-    id: "cherry",
-    name: "Черри",
-    short: "Быстрый и живучий",
-    traits: [
-      "быстрый",
-      "живучий",
-      "иногда ощущение, что он сам всё решит",
-    ],
-    stats: { health: 64, water: 52, nutrition: 49, stress: 32, light: 56, yield: 14 },
-    modifiers: { resilience: 1.2, stressGain: 0.85, yieldScale: 1.12, slow: 0.95 },
-    persona: "Ты выбираешь темп и не драматизируешь по мелочам.",
-  },
-  big: {
-    id: "big",
-    name: "Крупноплодный",
-    short: "Вкусно, эффектно, капризно",
-    traits: ["вкусный", "эффектный", "требует внимания"],
-    stats: { health: 58, water: 50, nutrition: 46, stress: 38, light: 53, yield: 12 },
-    modifiers: { resilience: 0.95, stressGain: 1.1, yieldScale: 1.25, slow: 1.03 },
-    persona: "Ты любишь результат, который хочется показывать всем.",
-  },
-  stable: {
-    id: "stable",
-    name: "Надёжный дачный",
-    short: "Стабильность и без сюрпризов",
-    traits: ["сбалансированный", "стабильный", "без сюрпризов"],
-    stats: { health: 62, water: 50, nutrition: 52, stress: 30, light: 55, yield: 13 },
-    modifiers: { resilience: 1.05, stressGain: 0.95, yieldScale: 1.03, slow: 1 },
-    persona: "Ты строишь систему, а не надеешься на случай.",
-  },
-  giant: {
-    id: "giant",
-    name: "Гигантский томат",
-    short: "Амбиции и риск",
-    traits: [
-      "амбициозный",
-      "даёт огромные плоды",
-      "медленно развивается",
-      "чувствителен к стрессу и ошибкам",
-      "при хорошем уходе даёт «легендарный» результат",
-    ],
-    stats: { health: 56, water: 49, nutrition: 45, stress: 42, light: 54, yield: 8 },
-    modifiers: { resilience: 0.85, stressGain: 1.24, yieldScale: 1.55, slow: 1.16 },
-    persona: "Ты человек высокой планки: либо легенда, либо урок.",
-  },
+  loved: { name: "Любимые томаты", desc: "Для души и урожая" },
+  giant: { name: "Гигантский томат", desc: "Для рекорда и супер результата" },
 };
 
-const WEEK_EVENTS = [
-  {
-    title: "Первые листочки и первая паника",
-    text: "Куст ожил, и ты уже хочешь сделать всё идеально. Что в приоритете?",
-    choices: [
-      {
-        text: "Полить по-человечески и оставить в покое",
-        effects: { water: +12, stress: -6, health: +4 },
-        comment: "Зрелая стратегия: иногда «не мешать» — лучший уход.",
-      },
-      {
-        text: "Сразу устроить интенсив: полив + подкормка",
-        effects: { water: +10, nutrition: +14, stress: +5, health: +1 },
-        comment: "Ты включил режим «ускорить рост любой ценой».",
-      },
-      {
-        text: "Покрутить горшок на солнце ради идеального света",
-        effects: { light: +14, stress: +6, health: -2 },
-        comment: "Томат оценил энтузиазм, но вестибулярка у него слабая.",
-      },
-    ],
-  },
-  {
-    title: "Неделя переменчивой погоды",
-    text: "То облака, то жарко, то ветер. Куст ждёт, как ты отреагируешь.",
-    choices: [
-      {
-        text: "Оставить на стабильном месте и наблюдать",
-        effects: { stress: -4, light: +4, health: +3 },
-        comment: "Стабильность тоже действие, а не бездействие.",
-      },
-      {
-        text: "Переставлять его весь день за солнцем",
-        effects: { light: +16, stress: +8, water: -5 },
-        comment: "Поймали максимум фотонов и немного вымотались.",
-      },
-      {
-        text: "Притенить и умеренно полить",
-        effects: { light: -8, water: +9, stress: -2, health: +2 },
-        comment: "Аккуратно. Иногда «чуть меньше света» — это спасение.",
-      },
-    ],
-  },
-  {
-    title: "Пора кормить",
-    text: "Куст явно намекает: «Мне бы ресурсов, пожалуйста».",
-    choices: [
-      {
-        text: "Дать мягкую подкормку по инструкции",
-        effects: { nutrition: +12, health: +5, stress: -2 },
-        comment: "Инструкция впервые в жизни действительно сработала.",
-      },
-      {
-        text: "Дать двойную дозу — пусть растёт быстрее",
-        effects: { nutrition: +20, stress: +10, health: -6 },
-        comment: "Сделал «премиум-апгрейд», но куст не подписывался.",
-      },
-      {
-        text: "Отложить подкормку на потом",
-        effects: { nutrition: -8, stress: +4, health: -3 },
-        comment: "Потом наступило слишком быстро, как обычно.",
-      },
-    ],
-  },
-  {
-    title: "Сосед с советами",
-    text: "Человек с опытом в 1987-м уверяет, что надо «по-другому».",
-    choices: [
-      {
-        text: "Вежливо кивнуть и оставить свою схему",
-        effects: { stress: -3, health: +3, light: +2 },
-        comment: "Уверенность в себе +100. Социальная дипломатия тоже +100.",
-      },
-      {
-        text: "Применить совет полностью",
-        effects: { water: +12, nutrition: -6, stress: +7 },
-        comment: "Эксперимент ради уважения к старшим поколениям.",
-      },
-      {
-        text: "Смешать совет соседа и свои заметки",
-        effects: { water: +4, nutrition: +4, stress: +3, health: +1 },
-        comment: "Компромисс: не идеально, но жизненно.",
-      },
-    ],
-  },
-  {
-    title: "Жаркая неделя",
-    text: "Солнце шпарит серьёзно. Растению может стать некомфортно.",
-    choices: [
-      {
-        text: "Усилить полив и поставить лёгкое притенение",
-        effects: { water: +10, light: -10, stress: -3, health: +4 },
-        comment: "Куст выдохнул. Ты тоже.",
-      },
-      {
-        text: "Оставить как есть: пусть закаляется",
-        effects: { light: +10, stress: +10, health: -5 },
-        comment: "Закалка полезна, когда она не похожа на испытание.",
-      },
-      {
-        text: "Перенести в полутень на неделю",
-        effects: { light: -15, stress: -2, health: -1, nutrition: -3 },
-        comment: "Безопасно, но рост слегка притормозил.",
-      },
-    ],
-  },
-  {
-    title: "Первый намёк на плоды",
-    text: "Появились завязи. Самое время не суетиться и не испортить момент.",
-    choices: [
-      {
-        text: "Поддержать питание и режим воды",
-        effects: { nutrition: +10, water: +8, yield: +8, stress: -2 },
-        comment: "Очень взрослая неделя. В хорошем смысле.",
-      },
-      {
-        text: "Сконцентрироваться только на урожае",
-        effects: { yield: +13, stress: +8, health: -4, water: -4 },
-        comment: "Риск ради результата. Узнаю этот стиль.",
-      },
-      {
-        text: "Ничего не менять, чтобы не сглазить",
-        effects: { stress: -1, yield: +2, nutrition: -5 },
-        comment: "Осторожность норм, но ресурсам всё равно нужна подпитка.",
-      },
-    ],
-  },
-  {
-    title: "Силы на исходе?",
-    text: "Листья чуть поникли. Это может быть усталость или дисбаланс.",
-    choices: [
-      {
-        text: "Проверить баланс и вернуть середину",
-        effects: { water: +6, nutrition: +6, light: -2, stress: -5, health: +4 },
-        comment: "Ты не лечишь симптом, ты правишь систему.",
-      },
-      {
-        text: "Экстренно залить водой и ждать чуда",
-        effects: { water: +18, stress: +5, health: -3 },
-        comment: "Чудо в этот раз решило остаться дома.",
-      },
-      {
-        text: "Дать отдых без вмешательств",
-        effects: { stress: -3, water: -4, nutrition: -4, health: +1 },
-        comment: "Нежно, но запасов стало меньше.",
-      },
-    ],
-  },
-  {
-    title: "Финальная неделя",
-    text: "Перед сбором урожая хочется сделать последний идеальный ход.",
-    choices: [
-      {
-        text: "Сохранить баланс и аккуратно довести сезон",
-        effects: { health: +6, yield: +7, stress: -4 },
-        comment: "Финиш как у профессионала: спокойно и точно.",
-      },
-      {
-        text: "Рискнуть ради максимума",
-        effects: { yield: +14, stress: +10, health: -8, water: -6 },
-        comment: "Если выгорит, это будет красиво. Если нет — тоже урок.",
-      },
-      {
-        text: "Сделать шаг назад и не мешать",
-        effects: { stress: -2, yield: +4, nutrition: -3 },
-        comment: "Консервативно, но иногда именно это спасает сезон.",
-      },
-    ],
-  },
+const STEP_EVENTS_LOVED = [
+  { state: "Томаты высажены. Листья немного поникли.", advice: "Снизь стресс после высадки.", options: ["Притенить", "Подкормить", "Оставить в покое, дать прижиться", "Оборвать нижние листья"], correct: 0 },
+  { state: "Почва подсохла, куст выглядит нормально.", advice: "Держи полив ровным.", options: ["Полить как следует", "Полить умеренно", "Опрыскать листья", "Не поливать"], correct: 1 },
+  { state: "Куст пошёл в рост.", advice: "Сейчас нужен мягкий толчок роста.", options: ["Подкормить азотом", "Полить сильнее", "Удалить нижние листья", "Понаблюдать"], correct: 0 },
+  { state: "Ночью ожидается похолодание/заморозки.", advice: "Сейчас важнее защита.", options: ["Не так уж и холодно, выдержат", "Полить на ночь", "Укрыть растения", "Подвязать куст"], correct: 2 },
+  { state: "Днём стало очень жарко.", advice: "Сними перегрев.", options: ["Оставить как есть", "Хорошо проветрить / притенить", "Полить днём", "Подкормить"], correct: 1 },
+  { state: "Куст быстро растёт и загущается.", advice: "Убери лишнюю нагрузку.", options: ["Удалить нижние листья", "Удалить лишние пасынки", "Полить больше", "Чем больше зелени - тем лучше"], correct: 1 },
+  { state: "Появились цветы.", advice: "Помоги опылению.", options: ["Обильно полить", "Помочь опылению (лёгкое встряхивание)", "Удалить цветы", "Подкормить азотом"], correct: 1 },
+  { state: "Появились маленькие плоды.", advice: "Поддержи налив плодов.", options: ["Увеличить полив", "Дать калийно-фосфорную подкормку", "Удалить плоды", "Решить, что дальше само пойдёт"], correct: 1 },
+  { state: "Плоды тяжелеют, кусту сложно держать нагрузку.", advice: "Поддержи ветви.", options: ["Подвязать куст", "Полить сильнее", "Удалить листья", "Подкормить азотом"], correct: 0 },
+  { state: "Снова жара: плоды наливаются, верхний слой почвы быстро сохнет.", advice: "Сними водный стресс до того, как завязь начнет осыпаться.", options: ["Притенить и не поливать", "Хорошо полить", "Оборвать часть листьев", "Подкормить азотом"], correct: 1 },
+  { state: "Нижние листья отработали своё и начали желтеть.", advice: "Освежи куст.", options: ["Удалить нижние листья", "Полить больше", "Замульчировать почву", "Подкормить"], correct: 0 },
+  { state: "Плоды почти спелые.", advice: "Дай кусту закончить цикл.", options: ["Сорвать сразу всё", "Дать дозреть на кусте", "Полить больше", "Подкормить"], correct: 1 },
 ];
 
-const STATE = {
-  selectedVarietyId: null,
-  variety: null,
-  week: 0,
-  stats: null,
-  history: [],
-  name: "",
-};
+const STEP_EVENTS_GIANT = [
+  { state: "Высадка гигантского томата: лист слегка поник.", advice: "Сначала защити от стресса пересадки.", options: ["Притенить", "Подкормить сразу мощно", "Удалить листья", "Оставить под прямым солнцем"], correct: 0 },
+  { state: "Почва подсыхает, корни начинают осваиваться.", advice: "Дай ровный старт по влаге.", options: ["Полить как следует", "Полить умеренно", "Не поливать", "Опрыскать листья"], correct: 1 },
+  { state: "Пошел активный рост побегов.", advice: "Для рекордного плода задай правильную формировку.", options: ["Вести куст в 2-3 ствола", "Оставить все пасынки", "Удалить все боковые побеги", "Срезать верхушку"], correct: 0 },
+  { state: "Ночью ожидается похолодание.", advice: "Сохрани стабильность роста.", options: ["Не укрывать", "Полить на ночь", "Укрыть растения", "Подкормить азотом"], correct: 2 },
+  { state: "Жаркий день, куст под нагрузкой.", advice: "Сними перегрев, не допусти стресса.", options: ["Оставить как есть", "Хорошо проветрить / притенить", "Полить днём", "Подкормить"], correct: 1 },
+  { state: "Появилось несколько крупных цветков в кисти.", advice: "Выбери будущий рекордный плод.", options: ["Опылить все крупные цветки", "Выбрать самый крупный цветок и аккуратно опылить", "Удалить все кривые, сросшиеся цветки", "Подкормить азотом"], correct: [0, 1] },
+  { state: "Завязи достигли размера с крыжовник.", advice: "Сейчас нужно обратить внимание на деление клеток.", options: ["Дать кальций", "Дать азот", "Дать фосфор", "Дать калий"], correct: 0 },
+  { state: "Прошло две недели после первой кальциевой подкормки.", advice: "Поддержи налив и корневую систему.", options: ["Дать калий и фосфор", "Дать только калий", "Ничего не делать", "Сильно обрезать куст"], correct: 0 },
+  { state: "В кисти несколько завязей разного размера.", advice: "Сконцентрируй питание на лучшей завязи.", options: ["Оставить 1-2 лучших завязи, лишние удалить", "Оставить все завязи", "Удалить самую крупную завязь", "Хорошо полить"], correct: 0 },
+  { state: "Плод тяжелеет, ветви проседают.", advice: "Укрепи конструкцию под вес плода.", options: ["Подвязать куст и кисть", "Полить сильнее", "Удалить листья", "Подкормить азотом"], correct: 0 },
+  { state: "Нижние листья начали стареть.", advice: "Освободи питание и вентиляцию.", options: ["Удалить нижние листья", "Полить больше", "Замульчировать почву", "Подкормить"], correct: 0 },
+  { state: "Финальный набор массы перед созреванием.", advice: "Дай плоду спокойно завершить цикл.", options: ["Сорвать рано", "Дать дозреть на кусте", "Поливать ежедневно без меры", "Притенить плод"], correct: [1, 3] },
+];
 
 const screens = {
   start: document.getElementById("screen-start"),
-  variety: document.getElementById("screen-variety"),
+  setup: document.getElementById("screen-setup"),
   game: document.getElementById("screen-game"),
-  end: document.getElementById("screen-end"),
 };
 
 const nodes = {
   startBtn: document.getElementById("start-btn"),
   varietyList: document.getElementById("variety-list"),
-  confirmVarietyBtn: document.getElementById("confirm-variety-btn"),
-  weekLabel: document.getElementById("week-label"),
-  plantName: document.getElementById("plant-name"),
-  vibeBadge: document.getElementById("vibe-badge"),
-  statsList: document.getElementById("stats-list"),
-  eventTitle: document.getElementById("event-title"),
-  eventText: document.getElementById("event-text"),
-  choicesList: document.getElementById("choices-list"),
-  liveComment: document.getElementById("live-comment"),
-  finalTitle: document.getElementById("final-title"),
-  finalSubtitle: document.getElementById("final-subtitle"),
-  finalMetrics: document.getElementById("final-metrics"),
-  saveCardBtn: document.getElementById("save-card-btn"),
+  scenarioList: document.getElementById("scenario-list"),
+  goGameBtn: document.getElementById("go-game-btn"),
+  stageTitle: document.getElementById("stage-title"),
+  stateLine: document.getElementById("state-line"),
+  adviceLine: document.getElementById("advice-line"),
+  progressValue: document.getElementById("progress-value"),
+  stateLabel: document.getElementById("state-label"),
+  reactionLine: document.getElementById("reaction-line"),
+  scene: document.getElementById("scene"),
+  plant: document.getElementById("plant"),
+  plantSprite: document.getElementById("plant-sprite"),
+  giantFruit: document.getElementById("giant-fruit"),
+  liveBasket: document.getElementById("live-basket"),
+  liveCount: document.getElementById("live-count"),
+  timerValue: document.getElementById("timer-value"),
+  quickActions: document.getElementById("quick-actions"),
+  nextStepBtn: document.getElementById("next-step-btn"),
+  archType: document.getElementById("arch-type"),
+  storyMeta: document.getElementById("story-meta"),
+  storyResult: document.getElementById("story-result"),
+  shareBtn: document.getElementById("share-btn"),
+  shareStatus: document.getElementById("share-status"),
+  adminOpenBtn: document.getElementById("admin-open-btn"),
+  adminPanel: document.getElementById("admin-panel"),
+  adminPassword: document.getElementById("admin-password"),
+  adminLoginBtn: document.getElementById("admin-login-btn"),
+  adminLock: document.getElementById("admin-lock"),
+  adminEditorWrap: document.getElementById("admin-editor-wrap"),
+  adminStartTitle: document.getElementById("admin-start-title"),
+  adminStartHint: document.getElementById("admin-start-hint"),
+  adminStartButton: document.getElementById("admin-start-button"),
+  adminRulesTitle: document.getElementById("admin-rules-title"),
+  adminRulesItem0: document.getElementById("admin-rules-item-0"),
+  adminRulesItem1: document.getElementById("admin-rules-item-1"),
+  adminRulesItem2: document.getElementById("admin-rules-item-2"),
+  adminRulesTip: document.getElementById("admin-rules-tip"),
+  adminVariety: document.getElementById("admin-variety"),
+  adminStep: document.getElementById("admin-step"),
+  adminStepState: document.getElementById("admin-step-state"),
+  adminStepAdvice: document.getElementById("admin-step-advice"),
+  adminOpt0: document.getElementById("admin-opt-0"),
+  adminOpt1: document.getElementById("admin-opt-1"),
+  adminOpt2: document.getElementById("admin-opt-2"),
+  adminOpt3: document.getElementById("admin-opt-3"),
+  adminCorrect: document.getElementById("admin-correct"),
+  adminPrevStepBtn: document.getElementById("admin-prev-step-btn"),
+  adminNextStepBtn: document.getElementById("admin-next-step-btn"),
+  adminUnsavedBadge: document.getElementById("admin-unsaved-badge"),
+  adminMsgChoose: document.getElementById("admin-msg-choose"),
+  adminMsgGood: document.getElementById("admin-msg-good"),
+  adminMsgBad: document.getElementById("admin-msg-bad"),
+  adminNextBtn: document.getElementById("admin-next-btn"),
+  adminRestartBtn: document.getElementById("admin-restart-btn"),
+  adminShareBtn: document.getElementById("admin-share-btn"),
+  adminFinalTitle: document.getElementById("admin-final-title"),
+  adminFinalMetaTemplate: document.getElementById("admin-final-meta-template"),
+  adminArch0Title: document.getElementById("admin-arch-0-title"),
+  adminArch0Phrase: document.getElementById("admin-arch-0-phrase"),
+  adminArch1Title: document.getElementById("admin-arch-1-title"),
+  adminArch1Phrase: document.getElementById("admin-arch-1-phrase"),
+  adminArch2Title: document.getElementById("admin-arch-2-title"),
+  adminArch2Phrase: document.getElementById("admin-arch-2-phrase"),
+  adminArch3Title: document.getElementById("admin-arch-3-title"),
+  adminArch3Phrase: document.getElementById("admin-arch-3-phrase"),
+  adminLevelWeak: document.getElementById("admin-level-weak"),
+  adminLevelGood: document.getElementById("admin-level-good"),
+  adminLevelTopLoved: document.getElementById("admin-level-top-loved"),
+  adminLevelTopGiant: document.getElementById("admin-level-top-giant"),
+  adminFinalResultTemplate: document.getElementById("admin-final-result-template"),
+  adminFinalTimeoutTemplate: document.getElementById("admin-final-timeout-template"),
+  adminSaveDraftBtn: document.getElementById("admin-save-draft-btn"),
+  adminPublishBtn: document.getElementById("admin-publish-btn"),
+  adminExportBtn: document.getElementById("admin-export-btn"),
+  adminImportBtn: document.getElementById("admin-import-btn"),
+  adminImportFile: document.getElementById("admin-import-file"),
+  adminCloseBtn: document.getElementById("admin-close-btn"),
+  adminStatus: document.getElementById("admin-status"),
+  seasonOverlay: document.getElementById("season-overlay"),
+  victoryBurst: document.getElementById("victory-burst"),
   restartBtn: document.getElementById("restart-btn"),
-  shareCard: document.getElementById("share-card"),
-  shareVariety: document.getElementById("share-variety"),
-  shareHeadline: document.getElementById("share-headline"),
-  shareSummary: document.getElementById("share-summary"),
-  shareHealth: document.getElementById("share-health"),
-  shareBalance: document.getElementById("share-balance"),
-  shareYield: document.getElementById("share-yield"),
-  shareStress: document.getElementById("share-stress"),
-  shareStyle: document.getElementById("share-style"),
 };
 
-function clamp(value, min = 0, max = 100) {
-  return Math.max(min, Math.min(max, Math.round(value)));
+const STATE = {
+  variety: null,
+  scenario: null,
+  step: 0,
+  health: 70,
+  stress: 26,
+  water: 55,
+  heat: 48,
+  growth: 0,
+  tomatoes: 0,
+  timeLeft: 60,
+  timedOut: false,
+  selectedActionId: null,
+  mood: "healthy",
+  finalText: "",
+  preloaded: {},
+};
+let timerIntervalId = null;
+const ADMIN_PASSWORD = "Tomato-Admin-2026";
+const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
+const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
+let CONTENT = null;
+let adminAutosaveTimerId = null;
+let adminHasUnsavedChanges = false;
+
+function clamp(v, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, Math.round(v)));
 }
 
-function showScreen(screenName) {
-  Object.values(screens).forEach((section) => section.classList.remove("screen--active"));
-  screens[screenName].classList.add("screen--active");
+function preventOrphans(text) {
+  if (!text) return text;
+  return text.replace(/(^|\s)([а-яёa-z]{1,2})\s(?=[а-яёa-z])/giu, "$1$2\u00A0");
 }
 
-function renderVarieties() {
-  const cards = Object.values(VARIETIES)
-    .map((variety) => {
-      const selected = STATE.selectedVarietyId === variety.id ? "variety-card--selected" : "";
-      const traits = variety.traits.map((trait) => `<li>${trait}</li>`).join("");
-      return `
-        <article class="variety-card ${selected}" data-variety-id="${variety.id}">
-          <h3>${variety.name}</h3>
-          <ul>${traits}</ul>
-        </article>
-      `;
-    })
-    .join("");
-
-  nodes.varietyList.innerHTML = cards;
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-function getBalance(stats) {
-  const { water, nutrition, light } = stats;
-  const balance = 100 - (Math.abs(water - 50) + Math.abs(nutrition - 50) + Math.abs(light - 55)) / 3;
-  return clamp(balance);
+function buildDefaultContent() {
+  return {
+    start: {
+      tag: "Визуальная мини-игра",
+      titleHtml: "Выживи сезон<br>с томатом 🍅",
+      hint: "Просто смотри на куст и помогай ему.",
+      rulesTitle: "Как играть",
+      rulesItems: [
+        "Выбери, где растёт томат: теплица или открытый грунт.",
+        "На каждом этапе смотри на состояние куста и выбирай ОДНО главное действие.",
+        "Доведи растение до урожая и собери как можно больше томатов или вырасти самый гигантский плод.",
+      ],
+      tip: "Подсказка: если куст вянет — он ждёт не мотивационную речь, а полив.",
+      startButton: "Старт сезона",
+    },
+    setup: {
+      tag: "Подготовка",
+      title: "Выбери сценарий",
+      varietyTitle: "Сорт",
+      scenarioTitle: "Где растим",
+      goGameButton: "Высадить рассаду",
+      varieties: deepClone(VARIETIES),
+      scenarios: [
+        { id: "greenhouse", name: "Теплица", desc: "Жара и духота" },
+        { id: "ground", name: "Открытый грунт", desc: "Ветер и холод" },
+      ],
+    },
+    game: {
+      stageNames: deepClone(STAGE_NAMES),
+      steps: {
+        loved: deepClone(STEP_EVENTS_LOVED),
+        giant: deepClone(STEP_EVENTS_GIANT),
+      },
+      labels: {
+        season: "Сезон",
+        step: "Этап",
+        state: "Состояние",
+        harvest: "Урожай",
+        timer: "Таймер",
+      },
+      messages: {
+        chooseAction: "Выбери действие для этого этапа.",
+        chooseFirst: "Сначала выбери 1 вариант.",
+        goodMove: "Хороший ход",
+        borderline: "Пока терпимо, но на грани",
+        seasonDone: "Сезон завершён. Отличная работа!",
+        timeOut: "Время вышло. Сезон завершён.",
+      },
+      buttons: {
+        nextStep: "Пройти этап",
+      },
+    },
+    final: {
+      title: "Сезон завершён",
+      restartButton: "Сыграть снова",
+      shareButton: "Поделиться игрой",
+      shareSuccess: "Ссылка на игру получена.",
+      metaLead: "",
+      archetypes: [
+        { title: "Контролёр теплицы", phrase: "Ты держал сезон под контролем." },
+        { title: "Рисковый экспериментатор", phrase: "Смело играл и собрал щедрый урожай." },
+        { title: "Спокойный садовод", phrase: "Ровный подход дал хороший результат." },
+        { title: "Упрямый выживальщик", phrase: "Сезон был непростым, но ты дошёл до финала." },
+      ],
+      levels: {
+        weak: "Слабый урожай",
+        good: "Хороший урожай",
+        topLoved: "Супер-урожай!",
+        topGiant: "Гигантский урожай!",
+      },
+      resultText: "Итог",
+      timeoutText: "Время вышло, куст завял. Итог",
+      timeoutResult: "Время вышло, куст завял. Итог: {{level}}.",
+      resultTemplate: "{{phrase}} Итог: {{level}}.",
+    },
+  };
 }
 
-function applyChoice(choice) {
-  const effects = choice.effects || {};
-  const m = STATE.variety.modifiers;
-  const s = STATE.stats;
+function loadPublishedContent(defaultContent) {
+  try {
+    const raw = localStorage.getItem(STORAGE_PUBLISHED_KEY);
+    if (!raw) return deepClone(defaultContent);
+    return JSON.parse(raw);
+  } catch {
+    return deepClone(defaultContent);
+  }
+}
 
-  if (effects.health) s.health += effects.health * m.resilience;
-  if (effects.water) s.water += effects.water;
-  if (effects.nutrition) s.nutrition += effects.nutrition;
-  if (effects.stress) s.stress += effects.stress * m.stressGain;
-  if (effects.light) s.light += effects.light;
-  if (effects.yield) s.yield += effects.yield * m.yieldScale;
+function getDraftContent(defaultContent) {
+  try {
+    const raw = localStorage.getItem(STORAGE_DRAFT_KEY);
+    if (!raw) return deepClone(defaultContent);
+    return JSON.parse(raw);
+  } catch {
+    return deepClone(defaultContent);
+  }
+}
 
-  applyAmbientLogic();
+function setAdminStatus(text) {
+  if (!nodes.adminStatus) return;
+  nodes.adminStatus.textContent = text || "";
+}
 
-  Object.keys(s).forEach((key) => {
-    s[key] = clamp(s[key]);
+function setAdminUnsaved(flag) {
+  adminHasUnsavedChanges = !!flag;
+  if (!nodes.adminUnsavedBadge) return;
+  nodes.adminUnsavedBadge.classList.toggle("admin-unsaved-badge--show", adminHasUnsavedChanges);
+}
+
+function scheduleAdminAutosave() {
+  if (!ADMIN_CONTENT) return;
+  if (adminAutosaveTimerId) clearTimeout(adminAutosaveTimerId);
+  adminAutosaveTimerId = setTimeout(() => {
+    saveDraftFromEditor("autosave");
+  }, 2000);
+}
+
+function applyContent(content) {
+  CONTENT = deepClone(content);
+  STAGE_NAMES.splice(0, STAGE_NAMES.length, ...CONTENT.game.stageNames);
+  STEP_EVENTS_LOVED.splice(0, STEP_EVENTS_LOVED.length, ...CONTENT.game.steps.loved);
+  STEP_EVENTS_GIANT.splice(0, STEP_EVENTS_GIANT.length, ...CONTENT.game.steps.giant);
+  VARIETIES.loved = deepClone(CONTENT.setup.varieties.loved);
+  VARIETIES.giant = deepClone(CONTENT.setup.varieties.giant);
+
+  const startTag = document.getElementById("start-tag");
+  const startTitle = document.getElementById("start-title");
+  const startHint = document.getElementById("start-hint");
+  const rulesTitle = document.getElementById("rules-title");
+  const rulesTip = document.getElementById("rules-tip");
+  const rulesItems = document.querySelectorAll(".rules-item");
+  const setupTag = document.getElementById("setup-tag");
+  const setupTitle = document.getElementById("setup-title");
+  const setupVarietyTitle = document.getElementById("setup-variety-title");
+  const setupScenarioTitle = document.getElementById("setup-scenario-title");
+  const storyTitle = document.getElementById("story-title");
+
+  if (startTag) startTag.textContent = CONTENT.start.tag;
+  if (startTitle) startTitle.innerHTML = CONTENT.start.titleHtml;
+  if (startHint) startHint.textContent = CONTENT.start.hint;
+  if (rulesTitle) rulesTitle.textContent = CONTENT.start.rulesTitle;
+  rulesItems.forEach((el, idx) => {
+    el.textContent = CONTENT.start.rulesItems[idx] || "";
   });
+  if (rulesTip) rulesTip.textContent = CONTENT.start.tip;
+  if (nodes.startBtn) nodes.startBtn.textContent = CONTENT.start.startButton;
+  if (setupTag) setupTag.textContent = CONTENT.setup.tag;
+  if (setupTitle) setupTitle.textContent = CONTENT.setup.title;
+  if (setupVarietyTitle) setupVarietyTitle.textContent = CONTENT.setup.varietyTitle;
+  if (setupScenarioTitle) setupScenarioTitle.textContent = CONTENT.setup.scenarioTitle;
+  if (nodes.goGameBtn) nodes.goGameBtn.textContent = CONTENT.setup.goGameButton;
+  if (nodes.nextStepBtn) nodes.nextStepBtn.textContent = CONTENT.game.buttons.nextStep;
+  if (storyTitle) storyTitle.textContent = CONTENT.final.title;
+  if (nodes.restartBtn) nodes.restartBtn.textContent = CONTENT.final.restartButton;
+  if (nodes.shareBtn) nodes.shareBtn.textContent = CONTENT.final.shareButton;
 
-  STATE.history.push({
-    week: STATE.week + 1,
-    choice: choice.text,
-    comment: choice.comment,
-  });
-
-  nodes.liveComment.textContent = choice.comment;
+  const miniLabels = document.querySelectorAll(".mini-stats span");
+  if (miniLabels[0]) miniLabels[0].textContent = CONTENT.game.labels.step;
+  if (miniLabels[1]) miniLabels[1].textContent = CONTENT.game.labels.state;
+  if (miniLabels[2]) miniLabels[2].textContent = CONTENT.game.labels.harvest;
+  if (miniLabels[3]) miniLabels[3].textContent = CONTENT.game.labels.timer;
 }
 
-function applyAmbientLogic() {
-  const s = STATE.stats;
-  const m = STATE.variety.modifiers;
-  const balance = getBalance(s);
+function formatTime(totalSeconds) {
+  const s = Math.max(0, totalSeconds);
+  const mm = String(Math.floor(s / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
 
-  if (s.light < 35) {
-    s.health -= 5;
-    s.yield -= 4;
-    s.stress += 3;
-  } else if (s.light <= 72) {
-    s.health += 4;
-    s.yield += 6 * m.yieldScale;
-  } else if (s.light > 72 && s.stress > 58) {
-    s.health -= 9;
-    s.stress += 8 * m.stressGain;
-    s.yield -= 5;
+function renderTimer() {
+  if (!nodes.timerValue) return;
+  nodes.timerValue.textContent = formatTime(STATE.timeLeft);
+}
+
+function stopTimer() {
+  if (!timerIntervalId) return;
+  clearInterval(timerIntervalId);
+  timerIntervalId = null;
+}
+
+function setShareStatus(text) {
+  if (!nodes.shareStatus) return;
+  nodes.shareStatus.textContent = text || "";
+}
+
+async function shareGame() {
+  const url = window.location.href;
+  const title = "Выживи сезон с томатом";
+  const text = "Попробуй мини-игру про выращивание томатов 🍅";
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text, url });
+      setShareStatus(CONTENT?.final?.shareSuccess || "Ссылка на игру получена.");
+      return;
+    }
+  } catch {
+    // ignore and fallback to clipboard
+  }
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+      setShareStatus(CONTENT?.final?.shareSuccess || "Ссылка на игру получена.");
+      return;
+    }
+  } catch {
+    // ignore and show success text fallback below
+  }
+
+  setShareStatus(CONTENT?.final?.shareSuccess || "Ссылка на игру получена.");
+}
+
+function startTimer() {
+  stopTimer();
+  nodes.reactionLine.classList.remove("reaction-line--alert");
+  nodes.reactionLine.classList.add("reaction-line--pulse");
+  renderTimer();
+  timerIntervalId = setInterval(() => {
+    STATE.timeLeft -= 1;
+    renderTimer();
+    if (STATE.timeLeft > 0) return;
+    stopTimer();
+    STATE.timedOut = true;
+    STATE.health = 0;
+    STATE.stress = 100;
+    STATE.water = 0;
+    clampStats();
+    updatePlantVisual(true);
+    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.timeOut || "Время вышло. Сезон завершён.");
+    nodes.reactionLine.classList.add("reaction-line--alert");
+    finishGame({ noBurst: true, timeout: true });
+  }, 1000);
+}
+
+function showScreen(name) {
+  Object.values(screens).forEach((screen) => screen.classList.remove("screen--active"));
+  screens[name].classList.add("screen--active");
+}
+
+function getMood() {
+  if (STATE.health <= 8) return "dead";
+  if (STATE.health < 22 || STATE.stress > 86) return "critical";
+  if (STATE.heat > 83) return "overheat";
+  if (STATE.water < 30) return "waterlow";
+  if (STATE.stress > 62) return "stressed";
+  if (STATE.health < 44) return "tired";
+  return "healthy";
+}
+
+function moodLabel(mood) {
+  return {
+    healthy: "Здоровый",
+    tired: "Уставший",
+    stressed: "Стресс",
+    waterlow: "Нехватка воды",
+    overheat: "Перегрев",
+    critical: "Критическое",
+    dead: "Погиб",
+  }[mood] || "Состояние";
+}
+
+function getStepEvents() {
+  return STATE.variety === "giant" ? STEP_EVENTS_GIANT : STEP_EVENTS_LOVED;
+}
+
+function getTotalSteps() {
+  return getStepEvents().length;
+}
+
+function preloadImages(urls) {
+  return Promise.all(urls.map((url) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = resolve;
+    img.onerror = resolve;
+    img.src = url;
+  })));
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function toDataUrlFromImageData(imageData, width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+async function preparePlantFrame(url) {
+  if (PREPARED.frames[url]) return PREPARED.frames[url];
+  try {
+    const img = await loadImage(url);
+    const canvas = document.createElement("canvas");
+    const w = img.naturalWidth || 600;
+    const h = img.naturalHeight || 600;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+
+    const frameMatch = url.match(/(\d+)\.webp$/i);
+    const frameNo = frameMatch ? Number(frameMatch[1]) : 0;
+    const isGiantFrame = url.includes("/giant/");
+
+    const isCandidate = (x, y) => {
+      if (y < Math.floor(h * 0.56)) return false;
+      const i = (y * w + x) * 4;
+      const a = d[i + 3];
+      if (a < 24) return false;
+      const r = d[i];
+      const g = d[i + 1];
+      const b = d[i + 2];
+      const isGreenStem = g > r + 14 && g > b + 10;
+      if (isGreenStem) return false;
+      const brownish = (r > 42 && g > 24 && b < 90 && r >= g && g >= b - 10);
+      const darkNeutral = (Math.max(r, g, b) - Math.min(r, g, b) < 35 && r < 175 && g < 175 && b < 175);
+      return brownish || darkNeutral;
+    };
+
+    const visited = new Uint8Array(w * h);
+    const qx = new Int32Array(w * h);
+    const qy = new Int32Array(w * h);
+    let qs = 0;
+    let qe = 0;
+
+    for (let x = 0; x < w; x += 1) {
+      const y = h - 1;
+      if (!isCandidate(x, y)) continue;
+      const id = y * w + x;
+      visited[id] = 1;
+      qx[qe] = x;
+      qy[qe] = y;
+      qe += 1;
+    }
+
+    const push = (x, y) => {
+      if (x < 0 || x >= w || y < 0 || y >= h) return;
+      const id = y * w + x;
+      if (visited[id]) return;
+      if (!isCandidate(x, y)) return;
+      visited[id] = 1;
+      qx[qe] = x;
+      qy[qe] = y;
+      qe += 1;
+    };
+
+    while (qs < qe) {
+      const x = qx[qs];
+      const y = qy[qs];
+      qs += 1;
+      const i = (y * w + x) * 4;
+      d[i + 3] = 0;
+      push(x + 1, y);
+      push(x - 1, y);
+      push(x, y + 1);
+      push(x, y - 1);
+    }
+
+    // Cleanup pass: below lower zone remove leftover soil while preserving center stem.
+    const stemLeft = Math.floor(w * 0.47);
+    const stemRight = Math.floor(w * 0.53);
+    const hardCutY = Math.floor(h * 0.78);
+    for (let y = hardCutY; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const i = (y * w + x) * 4;
+        if (d[i + 3] < 18) continue;
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+        const isGreen = g > r + 12 && g > b + 8;
+        const isProtectedStem = x >= stemLeft && x <= stemRight && isGreen;
+        if (!isProtectedStem) d[i + 3] = 0;
+      }
+    }
+
+    // Extra cleanup for giant 11-12 where soil remains around the base.
+    if (isGiantFrame && frameNo >= 11) {
+      const extraCutY = Math.floor(h * 0.68);
+      for (let y = extraCutY; y < h; y += 1) {
+        for (let x = 0; x < w; x += 1) {
+          const i = (y * w + x) * 4;
+          if (d[i + 3] < 14) continue;
+          const r = d[i];
+          const g = d[i + 1];
+          const b = d[i + 2];
+          const isGreen = g > r + 14 && g > b + 12;
+          const inStemCore = x >= Math.floor(w * 0.492) && x <= Math.floor(w * 0.508);
+          if (!(isGreen && inStemCore)) d[i + 3] = 0;
+        }
+      }
+    }
+
+    // Heal dark artifacts (black pits) by averaging bright neighbors.
+    const copy = new Uint8ClampedArray(d);
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const i = (y * w + x) * 4;
+        const a = copy[i + 3];
+        if (a < 28) continue;
+        const r = copy[i];
+        const g = copy[i + 1];
+        const b = copy[i + 2];
+        const max = Math.max(r, g, b);
+        if (max > 74) continue;
+        let nr = 0;
+        let ng = 0;
+        let nb = 0;
+        let na = 0;
+        let count = 0;
+        for (let oy = -1; oy <= 1; oy += 1) {
+          for (let ox = -1; ox <= 1; ox += 1) {
+            if (ox === 0 && oy === 0) continue;
+            const ni = ((y + oy) * w + (x + ox)) * 4;
+            const nna = copy[ni + 3];
+            if (nna < 50) continue;
+            const nmax = Math.max(copy[ni], copy[ni + 1], copy[ni + 2]);
+            if (nmax < 68) continue;
+            nr += copy[ni];
+            ng += copy[ni + 1];
+            nb += copy[ni + 2];
+            na += nna;
+            count += 1;
+          }
+        }
+        if (count >= 3) {
+          d[i] = Math.round(nr / count);
+          d[i + 1] = Math.round(ng / count);
+          d[i + 2] = Math.round(nb / count);
+          d[i + 3] = Math.max(a, Math.round(na / count));
+        }
+      }
+    }
+
+    // Fill dark semi-transparent fringe to avoid black halos.
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const i = (y * w + x) * 4;
+        const a = d[i + 3];
+        if (a <= 0 || a >= 230) continue;
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+        const max = Math.max(r, g, b);
+        if (max > 90) continue;
+        let nr = 0;
+        let ng = 0;
+        let nb = 0;
+        let count = 0;
+        for (let oy = -1; oy <= 1; oy += 1) {
+          for (let ox = -1; ox <= 1; ox += 1) {
+            if (ox === 0 && oy === 0) continue;
+            const ni = ((y + oy) * w + (x + ox)) * 4;
+            const na = d[ni + 3];
+            if (na < 150) continue;
+            nr += d[ni];
+            ng += d[ni + 1];
+            nb += d[ni + 2];
+            count += 1;
+          }
+        }
+        if (count >= 2) {
+          d[i] = Math.round(nr / count);
+          d[i + 1] = Math.round(ng / count);
+          d[i + 2] = Math.round(nb / count);
+          d[i + 3] = Math.min(255, a + 40);
+        }
+      }
+    }
+
+    // Hard pass for dark spots on later stages (9-12): recolor dark pits from neighbors.
+    if (frameNo >= 9) {
+      const source = new Uint8ClampedArray(d);
+      for (let y = 2; y < h - 2; y += 1) {
+        for (let x = 2; x < w - 2; x += 1) {
+          const i = (y * w + x) * 4;
+          const a = source[i + 3];
+          if (a < 26) continue;
+          const r = source[i];
+          const g = source[i + 1];
+          const b = source[i + 2];
+          if (Math.max(r, g, b) > 88) continue;
+
+          let nr = 0;
+          let ng = 0;
+          let nb = 0;
+          let c = 0;
+          for (let oy = -2; oy <= 2; oy += 1) {
+            for (let ox = -2; ox <= 2; ox += 1) {
+              if (ox === 0 && oy === 0) continue;
+              const ni = ((y + oy) * w + (x + ox)) * 4;
+              const na = source[ni + 3];
+              if (na < 120) continue;
+              const rr = source[ni];
+              const gg = source[ni + 1];
+              const bb = source[ni + 2];
+              if (Math.max(rr, gg, bb) < 95) continue;
+              nr += rr;
+              ng += gg;
+              nb += bb;
+              c += 1;
+            }
+          }
+
+          if (c >= 5) {
+            d[i] = Math.round(nr / c);
+            d[i + 1] = Math.round(ng / c);
+            d[i + 2] = Math.round(nb / c);
+            d[i + 3] = Math.max(a, 200);
+          }
+        }
+      }
+    }
+
+    const prepared = toDataUrlFromImageData(imageData, w, h);
+    PREPARED.frames[url] = prepared;
+    return prepared;
+  } catch {
+    PREPARED.frames[url] = url;
+    return url;
+  }
+}
+
+async function prepareFlyTomato(url) {
+  if (PREPARED.ui.flyTomato) return PREPARED.ui.flyTomato;
+  try {
+    const img = await loadImage(url);
+    const w = img.naturalWidth || 600;
+    const h = img.naturalHeight || 600;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const i = (y * w + x) * 4;
+        if (d[i + 3] < 20) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (maxX < 0 || maxY < 0) {
+      PREPARED.ui.flyTomato = url;
+      return url;
+    }
+
+    const pad = 2;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+    const cw = maxX - minX + 1;
+    const ch = maxY - minY + 1;
+    const out = document.createElement("canvas");
+    out.width = cw;
+    out.height = ch;
+    const outCtx = out.getContext("2d");
+    outCtx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
+    const trimmed = out.toDataURL("image/png");
+    PREPARED.ui.flyTomato = trimmed;
+    return trimmed;
+  } catch {
+    PREPARED.ui.flyTomato = url;
+    return url;
+  }
+}
+
+async function prepareBasket(url) {
+  if (PREPARED.ui.basket) return PREPARED.ui.basket;
+  try {
+    const img = await loadImage(url);
+    const w = img.naturalWidth || 800;
+    const h = img.naturalHeight || 800;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < h; y += 1) {
+      for (let x = 0; x < w; x += 1) {
+        const i = (y * w + x) * 4;
+        if (d[i + 3] < 16) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (maxX < 0 || maxY < 0) {
+      PREPARED.ui.basket = url;
+      return url;
+    }
+
+    const pad = 2;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+    const cw = maxX - minX + 1;
+    const ch = maxY - minY + 1;
+    const out = document.createElement("canvas");
+    out.width = cw;
+    out.height = ch;
+    const outCtx = out.getContext("2d");
+    outCtx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
+    const trimmed = out.toDataURL("image/png");
+    PREPARED.ui.basket = trimmed;
+    return trimmed;
+  } catch {
+    PREPARED.ui.basket = url;
+    return url;
+  }
+}
+
+async function preloadVarietyAssets(variety) {
+  if (!variety || STATE.preloaded[variety]) return;
+  const urls = [...PLANT_FRAMES[variety], UI_ASSETS.basket, UI_ASSETS.flyTomato];
+  await preloadImages(urls);
+  await Promise.all(PLANT_FRAMES[variety].map((url) => preparePlantFrame(url)));
+  await prepareFlyTomato(UI_ASSETS.flyTomato);
+  await prepareBasket(UI_ASSETS.basket);
+  STATE.preloaded[variety] = true;
+}
+
+function renderSetup() {
+  nodes.varietyList.innerHTML = Object.entries(VARIETIES).map(([id, item]) => {
+    const active = STATE.variety === id ? "chip--active" : "";
+    return `<button class="chip ${active}" data-kind="variety" data-id="${id}">${item.name}<small>${item.desc}</small></button>`;
+  }).join("");
+
+  const scenarios = CONTENT?.setup?.scenarios || [
+    { id: "greenhouse", name: "Теплица", desc: "Жара и духота" },
+    { id: "ground", name: "Открытый грунт", desc: "Ветер и холод" },
+  ];
+  nodes.scenarioList.innerHTML = scenarios.map((item) => {
+    const active = STATE.scenario === item.id ? "chip--active" : "";
+    return `<button class="chip ${active}" data-kind="scenario" data-id="${item.id}">${item.name}<small>${item.desc}</small></button>`;
+  }).join("");
+
+  nodes.goGameBtn.disabled = !(STATE.variety && STATE.scenario);
+}
+
+function renderActions() {
+  const stepEvent = getStepEvents()[STATE.step];
+  nodes.quickActions.innerHTML = stepEvent.options.map((option, idx) => {
+    const active = STATE.selectedActionId === idx ? "quick--active" : "";
+    return `<button class="quick ${active}" data-action-id="${idx}">${option}</button>`;
+  }).join("");
+}
+
+function renderStepContext() {
+  const stepEvent = getStepEvents()[STATE.step];
+  nodes.stateLine.textContent = preventOrphans(stepEvent.state);
+  nodes.adviceLine.textContent = preventOrphans(`Совет: ${stepEvent.advice}`);
+}
+
+function isActionCorrect(stepEvent, selectedId) {
+  if (Array.isArray(stepEvent.correct)) return stepEvent.correct.includes(selectedId);
+  return selectedId === stepEvent.correct;
+}
+
+function getBasketSlot(index) {
+  const pile = [
+    { x: 0.31, y: 0.56, s: 1.08, a: -8 },
+    { x: 0.40, y: 0.53, s: 1.14, a: -4 },
+    { x: 0.49, y: 0.51, s: 1.18, a: 0 },
+    { x: 0.58, y: 0.53, s: 1.14, a: 4 },
+    { x: 0.67, y: 0.56, s: 1.08, a: 8 },
+    { x: 0.35, y: 0.46, s: 1.00, a: -7 },
+    { x: 0.44, y: 0.42, s: 1.06, a: -3 },
+    { x: 0.53, y: 0.41, s: 1.08, a: 2 },
+    { x: 0.62, y: 0.44, s: 1.02, a: 6 },
+    { x: 0.41, y: 0.35, s: 0.94, a: -5 },
+    { x: 0.50, y: 0.32, s: 0.98, a: 0 },
+    { x: 0.59, y: 0.35, s: 0.94, a: 5 },
+  ];
+  const p = pile[index % pile.length];
+  const w = nodes.liveBasket.clientWidth || 300;
+  const h = nodes.liveBasket.clientHeight || 220;
+  return {
+    x: w * p.x,
+    y: h * p.y,
+    scale: p.s,
+    angle: p.a,
+    z: 80 + (index % pile.length),
+  };
+}
+
+function addTomatoToBasket(index) {
+  const basketTomato = document.createElement("span");
+  basketTomato.className = "basket-tomato";
+  const slot = getBasketSlot(index);
+  basketTomato.style.left = `${slot.x}px`;
+  basketTomato.style.top = `${slot.y}px`;
+  basketTomato.style.zIndex = `${slot.z + Math.floor(index / 12)}`;
+  basketTomato.style.transform = `translate(-50%, -50%) rotate(${slot.angle}deg) scale(${slot.scale})`;
+  nodes.liveBasket.appendChild(basketTomato);
+}
+
+function updatePlantVisual(withReaction = false) {
+  const prevMood = STATE.mood;
+  const mood = getMood();
+  STATE.mood = mood;
+  const progress = STATE.step / Math.max(getTotalSteps() - 1, 1);
+  const stage = clamp(Math.floor(progress * 6), 0, 6);
+  nodes.plant.className = `plant stage-${stage} mood-${mood} variety-${STATE.variety || "loved"} fruiting use-sprite`;
+  nodes.plant.style.setProperty("--growth", progress.toFixed(3));
+  const variety = STATE.variety || "loved";
+  const frames = PLANT_FRAMES[variety];
+  const frameIndex = clamp(STATE.step, 0, frames.length - 1);
+  if (nodes.plantSprite) {
+    nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
+  }
+  const spriteLiftByStep = [28, 25, 21, 17, 13, 9, 5, 3, 1, 0, 0, 0];
+  let spriteLift = spriteLiftByStep[frameIndex] || 0;
+  if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 6;
+  nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
+  nodes.stageTitle.textContent = STAGE_NAMES[stage];
+  nodes.progressValue.textContent = `${Math.min(STATE.step + 1, getTotalSteps())}/${getTotalSteps()}`;
+  nodes.stateLabel.textContent = moodLabel(mood);
+  nodes.scene.classList.toggle("scene--greenhouse", STATE.scenario === "greenhouse");
+  nodes.scene.classList.toggle("scene--ground", STATE.scenario === "ground");
+
+  nodes.giantFruit.style.opacity = "0";
+
+  if (withReaction && prevMood !== mood && mood !== "dead") {
+    nodes.plant.classList.add("revive");
+    setTimeout(() => nodes.plant.classList.remove("revive"), 400);
+  }
+}
+
+function applyEnvironmentPressure() {
+  if (STATE.scenario === "greenhouse") {
+    STATE.heat += 5;
+    STATE.water -= 4;
   } else {
-    s.yield += 2;
-    s.stress += 1;
+    STATE.heat -= 2;
+    STATE.water -= 2;
   }
-
-  if (s.water < 25 || s.water > 82) {
-    s.health -= 6;
-    s.stress += 5 * m.stressGain;
-  }
-
-  if (s.nutrition < 28) {
-    s.yield -= 5;
-    s.health -= 3;
-  } else if (s.nutrition > 78) {
-    s.stress += 4 * m.stressGain;
-  }
-
-  if (balance > 72) {
-    s.health += 5;
-    s.yield += 6 * m.yieldScale;
-    s.stress -= 5;
-  } else if (balance < 40) {
-    s.health -= 7;
-    s.stress += 6 * m.stressGain;
-  }
-
-  s.yield += (TOTAL_WEEKS / 10) * (1 / m.slow);
 }
 
-function getVibeText() {
-  const s = STATE.stats;
-  const balance = getBalance(s);
-  if (s.health >= 80 && s.stress <= 32 && balance >= 70) return "Суперрежим: куст в форме";
-  if (s.health <= 35 || s.stress >= 80) return "Критично: куст на грани";
-  if (balance < 45) return "Сильный дисбаланс, выравнивай";
-  if (s.light > 74 && s.stress > 60) return "Риск перегрева";
-  return "Нормально держитесь";
+function applyCorrectStep() {
+  STATE.health += 4;
+  STATE.stress -= 5;
+  STATE.growth += 10;
+  if (STATE.scenario === "greenhouse") STATE.heat -= 3;
 }
 
-function renderStats() {
-  nodes.vibeBadge.textContent = getVibeText();
-  const s = STATE.stats;
-  const statsMarkup = Object.keys(STAT_META)
-    .map((key) => {
-      const meta = STAT_META[key];
-      const value = clamp(s[key]);
-      return `
-        <div class="stat">
-          <div class="stat__top">
-            <span class="stat__name">${meta.label}</span>
-            <strong>${value}</strong>
-          </div>
-          <div class="bar"><span style="width: ${value}%; background: ${meta.color};"></span></div>
-        </div>
-      `;
-    })
-    .join("");
-  nodes.statsList.innerHTML = statsMarkup;
+function applyWrongStep() {
+  STATE.health -= 5;
+  STATE.stress += 6;
+  STATE.growth += 3;
+  if (STATE.scenario === "greenhouse") STATE.heat += 2;
 }
 
-function renderCurrentWeek() {
-  const event = WEEK_EVENTS[STATE.week];
-  nodes.weekLabel.textContent = String(STATE.week + 1);
-  nodes.eventTitle.textContent = event.title;
-  nodes.eventText.textContent = event.text;
-
-  const choicesMarkup = event.choices
-    .map((choice, idx) => `<button class="choice-btn" data-choice-index="${idx}">${choice.text}</button>`)
-    .join("");
-
-  nodes.choicesList.innerHTML = choicesMarkup;
-  renderStats();
+function clampStats() {
+  STATE.health = clamp(STATE.health);
+  STATE.stress = clamp(STATE.stress);
+  STATE.water = clamp(STATE.water);
+  STATE.heat = clamp(STATE.heat);
+  STATE.growth = clamp(STATE.growth);
 }
 
-function nextWeek(choiceIndex) {
-  const event = WEEK_EVENTS[STATE.week];
-  const choice = event.choices[choiceIndex];
-  if (!choice) return;
+function animateTomatoToBasket() {
+  const plantRect = nodes.plant.getBoundingClientRect();
+  const basketRect = nodes.liveBasket.getBoundingClientRect();
+  const slot = getBasketSlot(Math.max(STATE.tomatoes - 1, 0));
+  const tomato = document.createElement("img");
+  tomato.className = "fly-tomato";
+  tomato.src = PREPARED.ui.flyTomato || UI_ASSETS.flyTomato;
+  tomato.alt = "";
+  tomato.draggable = false;
+  const tomatoHalfW = 170 / 2;
+  const tomatoHalfH = 182 / 2;
+  const startX = plantRect.left + (plantRect.width * 0.53) - tomatoHalfW;
+  const startY = plantRect.top + (plantRect.height * 0.38) - tomatoHalfH;
+  tomato.style.left = `${startX}px`;
+  tomato.style.top = `${startY}px`;
+  document.body.appendChild(tomato);
 
-  applyChoice(choice);
-  STATE.week += 1;
+  requestAnimationFrame(() => {
+    const targetX = basketRect.left + slot.x;
+    const targetY = basketRect.top + slot.y;
+    const dx = targetX - (startX + tomatoHalfW);
+    const dy = targetY - (startY + tomatoHalfH);
+    tomato.style.transform = `translate(${dx}px, ${dy}px) scale(0.92)`;
+  });
 
-  if (STATE.week >= TOTAL_WEEKS) {
-    finishGame();
+  setTimeout(() => {
+    tomato.remove();
+    addTomatoToBasket(Math.max(STATE.tomatoes - 1, 0));
+    nodes.liveBasket.classList.add("bounce");
+    setTimeout(() => nodes.liveBasket.classList.remove("bounce"), 320);
+  }, 1300);
+}
+
+function playStep() {
+  if (STATE.selectedActionId === null) {
+    nodes.reactionLine.classList.add("reaction-line--pulse");
+    nodes.reactionLine.classList.remove("reaction-line--alert");
+    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.chooseFirst || "Сначала выбери 1 вариант.");
     return;
   }
 
-  renderCurrentWeek();
-}
+  applyEnvironmentPressure();
+  const stepEvent = getStepEvents()[STATE.step];
+  const correct = isActionCorrect(stepEvent, STATE.selectedActionId);
 
-function detectStyleTag() {
-  const s = STATE.stats;
-  const balance = getBalance(s);
-
-  if (s.yield >= 82 && s.health >= 70 && s.stress <= 45) return "Легендарный фермер";
-  if (balance >= 72 && s.stress <= 50) return "Мастер баланса";
-  if (s.yield >= 75 && s.stress >= 62) return "Рисковый продюсер урожая";
-  if (s.health < 45) return "Выживальщик на минималках";
-  return "Упрямый сезонный герой";
-}
-
-function getEndingData() {
-  const s = STATE.stats;
-  const balance = getBalance(s);
-  const styleTag = detectStyleTag();
-
-  let title = "Сезон окончен: достойная история";
-  let subtitle = "Куст выжил, ты тоже. В этом сезоне вы явно узнали характер друг друга.";
-
-  if (s.yield >= 88 && s.health >= 72 && s.stress <= 44) {
-    title = "Легенда грядки";
-    subtitle = "Ты выжал максимум и не сломал систему. Такой сезон пересказывают знакомым.";
-  } else if (s.health <= 35 || s.stress >= 86) {
-    title = "Драма на подоконнике";
-    subtitle = "Сезон был нервный, но ты дошёл до конца. Это тоже опыт, и очень честный.";
-  } else if (balance >= 74) {
-    title = "Мастер спокойного роста";
-    subtitle = "Ты держал баланс даже когда хотелось паниковать. Куст это запомнил.";
-  } else if (s.yield >= 76) {
-    title = "Охотник за урожаем";
-    subtitle = "Иногда на грани, но с хорошим финалом. Красиво и дерзко.";
+  if (correct) {
+    applyCorrectStep();
+    STATE.tomatoes += 1;
+    nodes.liveCount.textContent = `🍅 ${STATE.tomatoes}`;
+    animateTomatoToBasket();
+    nodes.reactionLine.classList.add("reaction-line--pulse");
+    nodes.reactionLine.classList.remove("reaction-line--alert");
+    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.goodMove || "Хороший ход");
+    nodes.reactionLine.style.color = "#1d6f41";
+  } else {
+    applyWrongStep();
+    nodes.reactionLine.classList.add("reaction-line--pulse");
+    nodes.reactionLine.classList.remove("reaction-line--alert");
+    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани");
+    nodes.reactionLine.style.color = "#a53a36";
   }
 
-  if (STATE.variety.id === "giant" && s.yield >= 84 && s.stress <= 58) {
-    title = "Гигантский триумф";
-    subtitle = "Ты приручил самый сложный сорт и вывел его в легенду. Да, это редкость.";
+  clampStats();
+  updatePlantVisual(true);
+
+  if (STATE.mood === "dead") return finishGame();
+
+  STATE.step += 1;
+  STATE.selectedActionId = null;
+  if (STATE.step >= getTotalSteps()) return finishGame();
+
+  renderStepContext();
+  renderActions();
+  updatePlantVisual(false);
+}
+
+function getArchetype() {
+  const arch = CONTENT?.final?.archetypes || [];
+  if (STATE.scenario === "greenhouse" && STATE.tomatoes >= 8) return arch[0] || { title: "Контролёр теплицы", phrase: "Ты держал сезон под контролем." };
+  if (STATE.tomatoes >= 9) return arch[1] || { title: "Рисковый экспериментатор", phrase: "Смело играл и собрал щедрый урожай." };
+  if (STATE.tomatoes >= 6) return arch[2] || { title: "Спокойный садовод", phrase: "Ровный подход дал хороший результат." };
+  return arch[3] || { title: "Упрямый выживальщик", phrase: "Сезон был непростым, но ты дошёл до финала." };
+}
+
+function getFinalLevel() {
+  const levels = CONTENT?.final?.levels || {};
+  if (STATE.tomatoes <= 5) return levels.weak || "Слабый урожай";
+  if (STATE.tomatoes <= 9) return levels.good || "Хороший урожай";
+  return STATE.variety === "giant" ? (levels.topGiant || "Гигантский урожай!") : (levels.topLoved || "Супер-урожай!");
+}
+
+function finishGame(options = {}) {
+  const { noBurst = false, timeout = false } = options;
+  stopTimer();
+  showScreen("game");
+  const archetype = getArchetype();
+  const level = getFinalLevel();
+  const variety = VARIETIES[STATE.variety];
+  const scenario = STATE.scenario === "greenhouse" ? "теплица" : "грунт";
+
+  nodes.archType.textContent = archetype.title;
+  const metaLead = (CONTENT?.final?.metaLead || "").trim();
+  const metaBody = `${variety.name} • ${scenario} • 🍅 ${STATE.tomatoes}/${getTotalSteps()}`;
+  nodes.storyMeta.textContent = preventOrphans(metaLead ? `${metaLead} ${metaBody}` : metaBody);
+  if (timeout) {
+    const lead = CONTENT?.final?.timeoutText || "Время вышло, куст завял. Итог";
+    nodes.storyResult.textContent = preventOrphans(`${lead}: ${level}.`);
+  } else {
+    const lead = CONTENT?.final?.resultText || "Итог";
+    nodes.storyResult.textContent = preventOrphans(`${archetype.phrase} ${lead}: ${level}.`);
   }
 
-  return { title, subtitle, balance, styleTag };
+  STATE.finalText =
+`Я прошёл(ла) "Выживи сезон с томатом" 🍅
+Результат: ${archetype.title}
+Сценарий: ${scenario}
+Сорт: ${variety.name}
+Урожай: ${level}
+Попробуй тоже`;
+
+  nodes.nextStepBtn.disabled = true;
+  if (!timeout) nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.seasonDone || "Сезон завершён. Отличная работа!");
+  if (!timeout) nodes.reactionLine.classList.add("reaction-line--pulse");
+  setShareStatus("");
+  if (nodes.seasonOverlay) nodes.seasonOverlay.classList.add("season-overlay--show");
+  if (noBurst) {
+    if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
+  } else {
+    playVictoryBurst(level);
+  }
 }
 
-function renderFinal() {
-  const s = STATE.stats;
-  const ending = getEndingData();
-  const bestWeek = STATE.history[Math.floor(Math.random() * STATE.history.length)];
+function playVictoryBurst(level) {
+  if (!nodes.victoryBurst) return;
+  nodes.victoryBurst.innerHTML = "";
+  const isTop = level === "Супер-урожай!" || level === "Гигантский урожай!";
+  const count = isTop ? 110 : level === "Хороший урожай" ? 78 : 48;
 
-  nodes.finalTitle.textContent = ending.title;
-  nodes.finalSubtitle.textContent = `${ending.subtitle} ${STATE.variety.persona}`;
+  // Короткий "взрыв" от центра экрана, чтобы финал ощущался наградой.
+  const popCount = isTop ? 24 : level === "Хороший урожай" ? 16 : 10;
+  for (let i = 0; i < popCount; i += 1) {
+    const tomato = document.createElement("span");
+    tomato.className = "victory-tomato victory-tomato--pop";
+    tomato.style.left = "50%";
+    tomato.style.top = "62%";
+    const angle = (Math.PI * 2 * i) / popCount;
+    const dist = 120 + Math.random() * 180;
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist - 220;
+    tomato.style.setProperty("--tx", `${tx}px`);
+    tomato.style.setProperty("--ty", `${ty}px`);
+    nodes.victoryBurst.appendChild(tomato);
+  }
 
-  nodes.finalMetrics.innerHTML = `
-    <div class="metric-card"><span>Сорт</span><strong>${STATE.variety.name}</strong></div>
-    <div class="metric-card"><span>Итоговый урожай</span><strong>${clamp(s.yield)} / 100</strong></div>
-    <div class="metric-card"><span>Баланс ухода</span><strong>${ending.balance} / 100</strong></div>
-    <div class="metric-card"><span>Твой стиль</span><strong>${ending.styleTag}</strong></div>
-  `;
-
-  nodes.shareVariety.textContent = STATE.variety.name;
-  nodes.shareHeadline.textContent = ending.title;
-  nodes.shareSummary.textContent = `8 недель позади. ${ending.subtitle} Самый вайбовый момент: «${bestWeek.choice}».`;
-  nodes.shareHealth.textContent = `${clamp(s.health)}`;
-  nodes.shareBalance.textContent = `${ending.balance}`;
-  nodes.shareYield.textContent = `${clamp(s.yield)}`;
-  nodes.shareStress.textContent = `${clamp(s.stress)}`;
-  nodes.shareStyle.textContent = ending.styleTag;
+  // Затем массовый "дождь" томатов сверху.
+  for (let i = 0; i < count; i += 1) {
+    const tomato = document.createElement("span");
+    tomato.className = "victory-tomato";
+    tomato.style.left = `${Math.random() * 100}%`;
+    tomato.style.top = `${-20 - Math.random() * 120}px`;
+    tomato.style.animationDelay = `${Math.random() * 1.1}s`;
+    tomato.style.setProperty("--drift-x", `${(Math.random() - .5) * 120}px`);
+    nodes.victoryBurst.appendChild(tomato);
+  }
 }
 
-function finishGame() {
-  showScreen("end");
-  renderFinal();
-}
-
-function startGameWithSelectedVariety() {
-  STATE.variety = VARIETIES[STATE.selectedVarietyId];
-  STATE.week = 0;
-  STATE.stats = { ...STATE.variety.stats };
-  STATE.history = [];
-  STATE.name = `Куст сорта "${STATE.variety.name}"`;
-
-  nodes.plantName.textContent = STATE.name;
-  nodes.liveComment.textContent = "Сезон стартовал. Дышим, смотрим на баланс и не паникуем.";
+async function startGame() {
+  STATE.step = 0;
+  STATE.health = 70;
+  STATE.stress = 26;
+  STATE.water = 55;
+  STATE.heat = STATE.scenario === "greenhouse" ? 54 : 44;
+  STATE.growth = 0;
+  STATE.tomatoes = 0;
+  STATE.timeLeft = 60;
+  STATE.timedOut = false;
+  STATE.selectedActionId = null;
+  STATE.mood = "healthy";
+  await preloadVarietyAssets(STATE.variety);
+  nodes.liveCount.textContent = "🍅 0";
+  nodes.liveBasket.innerHTML = "";
+  nodes.liveBasket.style.backgroundImage = `url("${PREPARED.ui.basket || UI_ASSETS.basket}")`;
+  nodes.nextStepBtn.disabled = false;
+  if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
+  if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
+  setShareStatus("");
 
   showScreen("game");
-  renderCurrentWeek();
+  nodes.reactionLine.style.color = "#c7ffd8";
+  nodes.reactionLine.classList.remove("reaction-line--alert");
+  nodes.reactionLine.classList.add("reaction-line--pulse");
+  nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа.");
+  renderTimer();
+  startTimer();
+  renderStepContext();
+  renderActions();
+  updatePlantVisual(false);
+}
+
+function openAdminPanel() {
+  if (!nodes.adminPanel) return;
+  nodes.adminPanel.classList.add("admin-panel--show");
+}
+
+function closeAdminPanel() {
+  if (!nodes.adminPanel) return;
+  nodes.adminPanel.classList.remove("admin-panel--show");
+}
+
+function unlockAdmin() {
+  if (!nodes.adminLock || !nodes.adminEditorWrap) return;
+  nodes.adminLock.style.display = "none";
+  nodes.adminEditorWrap.classList.add("admin-editor-wrap--show");
+}
+
+function lockAdmin() {
+  if (!nodes.adminLock || !nodes.adminEditorWrap) return;
+  nodes.adminLock.style.display = "";
+  nodes.adminEditorWrap.classList.remove("admin-editor-wrap--show");
+}
+
+let ADMIN_CONTENT = null;
+
+function getSelectedAdminStep() {
+  const variety = nodes.adminVariety?.value || "loved";
+  const index = Number(nodes.adminStep?.value || 0);
+  const steps = ADMIN_CONTENT?.game?.steps?.[variety];
+  if (!steps || !steps[index]) return null;
+  return { variety, index, step: steps[index] };
+}
+
+function fillAdminStepSelect() {
+  if (!nodes.adminStep || !ADMIN_CONTENT) return;
+  const variety = nodes.adminVariety?.value || "loved";
+  const steps = ADMIN_CONTENT.game.steps[variety] || [];
+  nodes.adminStep.innerHTML = steps.map((_, idx) => `<option value="${idx}">Этап ${idx + 1}</option>`).join("");
+}
+
+function fillAdminStepFields() {
+  const selected = getSelectedAdminStep();
+  if (!selected) return;
+  const { step } = selected;
+  nodes.adminStepState.value = step.state || "";
+  nodes.adminStepAdvice.value = step.advice || "";
+  nodes.adminOpt0.value = step.options?.[0] || "";
+  nodes.adminOpt1.value = step.options?.[1] || "";
+  nodes.adminOpt2.value = step.options?.[2] || "";
+  nodes.adminOpt3.value = step.options?.[3] || "";
+  const correct = Array.isArray(step.correct) ? Number(step.correct[0] ?? 0) : Number(step.correct ?? 0);
+  nodes.adminCorrect.value = String(Math.max(0, Math.min(3, correct)));
+}
+
+function fillAdminGeneralFields() {
+  if (!ADMIN_CONTENT) return;
+  nodes.adminStartTitle.value = ADMIN_CONTENT.start.titleHtml || "";
+  nodes.adminStartHint.value = ADMIN_CONTENT.start.hint || "";
+  nodes.adminStartButton.value = ADMIN_CONTENT.start.startButton || "";
+  nodes.adminRulesTitle.value = ADMIN_CONTENT.start.rulesTitle || "";
+  nodes.adminRulesItem0.value = ADMIN_CONTENT.start.rulesItems?.[0] || "";
+  nodes.adminRulesItem1.value = ADMIN_CONTENT.start.rulesItems?.[1] || "";
+  nodes.adminRulesItem2.value = ADMIN_CONTENT.start.rulesItems?.[2] || "";
+  nodes.adminRulesTip.value = ADMIN_CONTENT.start.tip || "";
+  nodes.adminMsgChoose.value = ADMIN_CONTENT.game.messages.chooseAction || "";
+  nodes.adminMsgGood.value = ADMIN_CONTENT.game.messages.goodMove || "";
+  nodes.adminMsgBad.value = ADMIN_CONTENT.game.messages.borderline || "";
+  nodes.adminNextBtn.value = ADMIN_CONTENT.game.buttons.nextStep || "";
+  nodes.adminFinalTitle.value = ADMIN_CONTENT.final.title || "";
+  nodes.adminRestartBtn.value = ADMIN_CONTENT.final.restartButton || "";
+  nodes.adminShareBtn.value = ADMIN_CONTENT.final.shareButton || "";
+  nodes.adminFinalMetaTemplate.value = ADMIN_CONTENT.final.metaLead || "";
+  const arches = ADMIN_CONTENT.final.archetypes || [];
+  nodes.adminArch0Title.value = arches[0]?.title || "";
+  nodes.adminArch0Phrase.value = arches[0]?.phrase || "";
+  nodes.adminArch1Title.value = arches[1]?.title || "";
+  nodes.adminArch1Phrase.value = arches[1]?.phrase || "";
+  nodes.adminArch2Title.value = arches[2]?.title || "";
+  nodes.adminArch2Phrase.value = arches[2]?.phrase || "";
+  nodes.adminArch3Title.value = arches[3]?.title || "";
+  nodes.adminArch3Phrase.value = arches[3]?.phrase || "";
+  nodes.adminLevelWeak.value = ADMIN_CONTENT.final.levels?.weak || "";
+  nodes.adminLevelGood.value = ADMIN_CONTENT.final.levels?.good || "";
+  nodes.adminLevelTopLoved.value = ADMIN_CONTENT.final.levels?.topLoved || "";
+  nodes.adminLevelTopGiant.value = ADMIN_CONTENT.final.levels?.topGiant || "";
+  nodes.adminFinalResultTemplate.value = ADMIN_CONTENT.final.resultText || "Итог";
+  nodes.adminFinalTimeoutTemplate.value = ADMIN_CONTENT.final.timeoutText || "Время вышло, куст завял. Итог";
+}
+
+function readAdminFormToContent() {
+  if (!ADMIN_CONTENT) throw new Error("Контент не загружен.");
+  ADMIN_CONTENT.start.titleHtml = nodes.adminStartTitle.value;
+  ADMIN_CONTENT.start.hint = nodes.adminStartHint.value;
+  ADMIN_CONTENT.start.startButton = nodes.adminStartButton.value;
+  ADMIN_CONTENT.start.rulesTitle = nodes.adminRulesTitle.value;
+  ADMIN_CONTENT.start.rulesItems = [
+    nodes.adminRulesItem0.value,
+    nodes.adminRulesItem1.value,
+    nodes.adminRulesItem2.value,
+  ];
+  ADMIN_CONTENT.start.tip = nodes.adminRulesTip.value;
+  ADMIN_CONTENT.game.messages.chooseAction = nodes.adminMsgChoose.value;
+  ADMIN_CONTENT.game.messages.goodMove = nodes.adminMsgGood.value;
+  ADMIN_CONTENT.game.messages.borderline = nodes.adminMsgBad.value;
+  ADMIN_CONTENT.game.buttons.nextStep = nodes.adminNextBtn.value;
+  ADMIN_CONTENT.final.title = nodes.adminFinalTitle.value;
+  ADMIN_CONTENT.final.restartButton = nodes.adminRestartBtn.value;
+  ADMIN_CONTENT.final.shareButton = nodes.adminShareBtn.value;
+  ADMIN_CONTENT.final.metaLead = nodes.adminFinalMetaTemplate.value;
+  ADMIN_CONTENT.final.archetypes = [
+    { title: nodes.adminArch0Title.value, phrase: nodes.adminArch0Phrase.value },
+    { title: nodes.adminArch1Title.value, phrase: nodes.adminArch1Phrase.value },
+    { title: nodes.adminArch2Title.value, phrase: nodes.adminArch2Phrase.value },
+    { title: nodes.adminArch3Title.value, phrase: nodes.adminArch3Phrase.value },
+  ];
+  ADMIN_CONTENT.final.levels = {
+    weak: nodes.adminLevelWeak.value,
+    good: nodes.adminLevelGood.value,
+    topLoved: nodes.adminLevelTopLoved.value,
+    topGiant: nodes.adminLevelTopGiant.value,
+  };
+  ADMIN_CONTENT.final.resultText = nodes.adminFinalResultTemplate.value;
+  ADMIN_CONTENT.final.timeoutText = nodes.adminFinalTimeoutTemplate.value;
+
+  const selected = getSelectedAdminStep();
+  if (selected) {
+    const { step } = selected;
+    step.state = nodes.adminStepState.value;
+    step.advice = nodes.adminStepAdvice.value;
+    step.options = [nodes.adminOpt0.value, nodes.adminOpt1.value, nodes.adminOpt2.value, nodes.adminOpt3.value];
+    step.correct = Number(nodes.adminCorrect.value || 0);
+  }
+}
+
+function fillAdminEditorWithDraft(defaultContent) {
+  ADMIN_CONTENT = getDraftContent(defaultContent);
+  fillAdminGeneralFields();
+  fillAdminStepSelect();
+  fillAdminStepFields();
+  setAdminUnsaved(false);
+}
+
+function validateAdminContentShape(content) {
+  if (!content?.game?.steps?.loved || !content?.game?.steps?.giant) {
+    throw new Error("Неверный формат JSON: отсутствуют этапы.");
+  }
+}
+
+function saveDraftFromEditor(source = "manual") {
+  try {
+    readAdminFormToContent();
+    localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
+    setAdminUnsaved(false);
+    if (source === "autosave") {
+      setAdminStatus("Черновик автосохранён.");
+    } else {
+      setAdminStatus("Черновик сохранён.");
+    }
+  } catch (error) {
+    setAdminStatus(`Ошибка сохранения: ${error.message}`);
+  }
+}
+
+function publishFromEditor() {
+  try {
+    readAdminFormToContent();
+    localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
+    localStorage.setItem(STORAGE_PUBLISHED_KEY, JSON.stringify(ADMIN_CONTENT));
+    setAdminUnsaved(false);
+    applyContent(ADMIN_CONTENT);
+    renderSetup();
+    if (screens.game.classList.contains("screen--active")) {
+      renderStepContext();
+      renderActions();
+      updatePlantVisual(false);
+    }
+    setAdminStatus("Опубликовано. Игра обновлена.");
+  } catch (error) {
+    setAdminStatus(`Ошибка публикации: ${error.message}`);
+  }
+}
+
+function exportAdminJson() {
+  try {
+    readAdminFormToContent();
+    const blob = new Blob([JSON.stringify(ADMIN_CONTENT, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tomato-content-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setAdminStatus("JSON экспортирован.");
+  } catch (error) {
+    setAdminStatus(`Ошибка экспорта: ${error.message}`);
+  }
+}
+
+function importAdminJsonFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || ""));
+      validateAdminContentShape(parsed);
+      ADMIN_CONTENT = parsed;
+      fillAdminGeneralFields();
+      fillAdminStepSelect();
+      fillAdminStepFields();
+      setAdminUnsaved(false);
+      setAdminStatus("JSON импортирован в формы.");
+    } catch (error) {
+      setAdminStatus(`Ошибка импорта: ${error.message}`);
+    }
+  };
+  reader.readAsText(file, "utf-8");
 }
 
 function bindEvents() {
-  nodes.startBtn.addEventListener("click", () => {
-    showScreen("variety");
+  nodes.startBtn.addEventListener("click", () => showScreen("setup"));
+
+  [nodes.varietyList, nodes.scenarioList].forEach((root) => {
+    root.addEventListener("click", (event) => {
+      const chip = event.target.closest(".chip");
+      if (!chip) return;
+      if (chip.dataset.kind === "variety") STATE.variety = chip.dataset.id;
+      if (chip.dataset.kind === "scenario") STATE.scenario = chip.dataset.id;
+      if (chip.dataset.kind === "variety") preloadVarietyAssets(STATE.variety);
+      renderSetup();
+    });
   });
 
-  nodes.varietyList.addEventListener("click", (event) => {
-    const card = event.target.closest(".variety-card");
-    if (!card) return;
+  nodes.goGameBtn.addEventListener("click", startGame);
 
-    STATE.selectedVarietyId = card.dataset.varietyId;
-    nodes.confirmVarietyBtn.disabled = false;
-    renderVarieties();
+  nodes.quickActions.addEventListener("click", (event) => {
+    const btn = event.target.closest(".quick");
+    if (!btn) return;
+    STATE.selectedActionId = Number(btn.dataset.actionId);
+    renderActions();
   });
 
-  nodes.confirmVarietyBtn.addEventListener("click", () => {
-    if (!STATE.selectedVarietyId) return;
-    startGameWithSelectedVariety();
-  });
+  nodes.nextStepBtn.addEventListener("click", playStep);
 
-  nodes.choicesList.addEventListener("click", (event) => {
-    const button = event.target.closest(".choice-btn");
-    if (!button) return;
-    const choiceIndex = Number(button.dataset.choiceIndex);
-    nextWeek(choiceIndex);
+  if (nodes.shareBtn) {
+    nodes.shareBtn.addEventListener("click", shareGame);
+  }
+
+  if (nodes.adminOpenBtn) {
+    nodes.adminOpenBtn.addEventListener("click", () => {
+      const defaults = buildDefaultContent();
+      fillAdminEditorWithDraft(defaults);
+      nodes.adminPassword.value = "";
+      lockAdmin();
+      setAdminStatus("");
+      openAdminPanel();
+    });
+  }
+  if (nodes.adminCloseBtn) {
+    nodes.adminCloseBtn.addEventListener("click", closeAdminPanel);
+  }
+  if (nodes.adminPanel) {
+    nodes.adminPanel.addEventListener("click", (event) => {
+      if (event.target === nodes.adminPanel) closeAdminPanel();
+    });
+  }
+  if (nodes.adminLoginBtn) {
+    nodes.adminLoginBtn.addEventListener("click", () => {
+      if ((nodes.adminPassword.value || "") !== ADMIN_PASSWORD) {
+        setAdminStatus("Неверный пароль.");
+        return;
+      }
+      unlockAdmin();
+      setAdminStatus("Доступ открыт.");
+    });
+  }
+  if (nodes.adminSaveDraftBtn) nodes.adminSaveDraftBtn.addEventListener("click", saveDraftFromEditor);
+  if (nodes.adminPublishBtn) nodes.adminPublishBtn.addEventListener("click", publishFromEditor);
+  if (nodes.adminExportBtn) nodes.adminExportBtn.addEventListener("click", exportAdminJson);
+  if (nodes.adminImportBtn && nodes.adminImportFile) {
+    nodes.adminImportBtn.addEventListener("click", () => nodes.adminImportFile.click());
+    nodes.adminImportFile.addEventListener("change", () => {
+      const file = nodes.adminImportFile.files?.[0];
+      if (file) importAdminJsonFromFile(file);
+      nodes.adminImportFile.value = "";
+    });
+  }
+  if (nodes.adminVariety) {
+    nodes.adminVariety.addEventListener("change", () => {
+      fillAdminStepSelect();
+      fillAdminStepFields();
+    });
+  }
+  if (nodes.adminStep) {
+    nodes.adminStep.addEventListener("change", () => {
+      fillAdminStepFields();
+    });
+  }
+  if (nodes.adminPrevStepBtn && nodes.adminStep) {
+    nodes.adminPrevStepBtn.addEventListener("click", () => {
+      const current = Number(nodes.adminStep.value || 0);
+      if (current <= 0) return;
+      nodes.adminStep.value = String(current - 1);
+      fillAdminStepFields();
+    });
+  }
+  if (nodes.adminNextStepBtn && nodes.adminStep) {
+    nodes.adminNextStepBtn.addEventListener("click", () => {
+      const current = Number(nodes.adminStep.value || 0);
+      const max = Math.max(0, (nodes.adminStep.options?.length || 1) - 1);
+      if (current >= max) return;
+      nodes.adminStep.value = String(current + 1);
+      fillAdminStepFields();
+    });
+  }
+  [nodes.adminStepState, nodes.adminStepAdvice, nodes.adminOpt0, nodes.adminOpt1, nodes.adminOpt2, nodes.adminOpt3, nodes.adminCorrect].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("input", () => {
+      readAdminFormToContent();
+      setAdminUnsaved(true);
+      scheduleAdminAutosave();
+    });
+    el.addEventListener("change", () => {
+      readAdminFormToContent();
+      setAdminUnsaved(true);
+      scheduleAdminAutosave();
+    });
+  });
+  [nodes.adminStartTitle, nodes.adminStartHint, nodes.adminStartButton, nodes.adminRulesTitle, nodes.adminRulesItem0, nodes.adminRulesItem1, nodes.adminRulesItem2, nodes.adminRulesTip, nodes.adminMsgChoose, nodes.adminMsgGood, nodes.adminMsgBad, nodes.adminNextBtn, nodes.adminRestartBtn, nodes.adminShareBtn, nodes.adminFinalTitle, nodes.adminFinalMetaTemplate, nodes.adminArch0Title, nodes.adminArch0Phrase, nodes.adminArch1Title, nodes.adminArch1Phrase, nodes.adminArch2Title, nodes.adminArch2Phrase, nodes.adminArch3Title, nodes.adminArch3Phrase, nodes.adminLevelWeak, nodes.adminLevelGood, nodes.adminLevelTopLoved, nodes.adminLevelTopGiant, nodes.adminFinalResultTemplate, nodes.adminFinalTimeoutTemplate].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("input", () => {
+      readAdminFormToContent();
+      setAdminUnsaved(true);
+      scheduleAdminAutosave();
+    });
   });
 
   nodes.restartBtn.addEventListener("click", () => {
-    STATE.selectedVarietyId = null;
+    stopTimer();
     STATE.variety = null;
-    STATE.stats = null;
-    STATE.week = 0;
-    STATE.history = [];
-    nodes.confirmVarietyBtn.disabled = true;
-    renderVarieties();
+    STATE.scenario = null;
+    nodes.liveBasket.innerHTML = "";
+    if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
+    if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
+    setShareStatus("");
+    nodes.reactionLine.classList.remove("reaction-line--alert");
+    nodes.reactionLine.classList.remove("reaction-line--pulse");
+    renderSetup();
     showScreen("start");
-  });
-
-  nodes.saveCardBtn.addEventListener("click", async () => {
-    const target = nodes.shareCard;
-    if (!window.html2canvas) {
-      alert("Не получилось подключить html2canvas.");
-      return;
-    }
-
-    nodes.saveCardBtn.disabled = true;
-    nodes.saveCardBtn.textContent = "Готовим карточку...";
-
-    try {
-      const canvas = await html2canvas(target, {
-        scale: Math.max(2, window.devicePixelRatio || 1),
-        backgroundColor: null,
-      });
-
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = image;
-      link.download = `tomato-season-${Date.now()}.png`;
-      link.click();
-    } catch (error) {
-      alert("Не удалось сохранить карточку. Попробуй ещё раз.");
-      console.error(error);
-    } finally {
-      nodes.saveCardBtn.disabled = false;
-      nodes.saveCardBtn.textContent = "Скачать карточку результата";
-    }
   });
 }
 
 function init() {
-  renderVarieties();
+  const defaultContent = buildDefaultContent();
+  try {
+    const published = loadPublishedContent(defaultContent);
+    applyContent(published);
+  } catch {
+    applyContent(defaultContent);
+  }
+  renderSetup();
+  renderTimer();
   bindEvents();
   showScreen("start");
 }
