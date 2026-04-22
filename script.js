@@ -474,6 +474,49 @@ function toDataUrlFromImageData(imageData, width, height) {
   return canvas.toDataURL("image/png");
 }
 
+function trimTransparentImageData(imageData, width, height, pad = 2, alphaThreshold = 16) {
+  const d = imageData.data;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      if (d[i + 3] < alphaThreshold) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (maxX < 0 || maxY < 0) {
+    return toDataUrlFromImageData(imageData, width, height);
+  }
+
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(width - 1, maxX + pad);
+  maxY = Math.min(height - 1, maxY + pad);
+
+  const cw = maxX - minX + 1;
+  const ch = maxY - minY + 1;
+  const srcCanvas = document.createElement("canvas");
+  srcCanvas.width = width;
+  srcCanvas.height = height;
+  const srcCtx = srcCanvas.getContext("2d");
+  srcCtx.putImageData(imageData, 0, 0);
+
+  const outCanvas = document.createElement("canvas");
+  outCanvas.width = cw;
+  outCanvas.height = ch;
+  const outCtx = outCanvas.getContext("2d");
+  outCtx.drawImage(srcCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
+  return outCanvas.toDataURL("image/png");
+}
+
 async function preparePlantFrame(url) {
   if (PREPARED.frames[url]) return PREPARED.frames[url];
   try {
@@ -701,7 +744,7 @@ async function preparePlantFrame(url) {
       }
     }
 
-    const prepared = toDataUrlFromImageData(imageData, w, h);
+    const prepared = trimTransparentImageData(imageData, w, h, 2, 18);
     PREPARED.frames[url] = prepared;
     return prepared;
   } catch {
