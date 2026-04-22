@@ -146,8 +146,14 @@
           <button id="admin-login-btn" class="btn btn--primary" type="button">Войти</button>
         </div>
         <div id="admin-editor-wrap" class="admin-editor-wrap">
+          <div class="admin-tabs">
+            <button class="btn btn--ghost admin-tab admin-tab--active" type="button" data-admin-tab="start">Старт</button>
+            <button class="btn btn--ghost admin-tab" type="button" data-admin-tab="step">Этап</button>
+            <button class="btn btn--ghost admin-tab" type="button" data-admin-tab="ui">UI</button>
+            <button class="btn btn--ghost admin-tab" type="button" data-admin-tab="final">Финал</button>
+          </div>
           <div class="admin-form-grid">
-            <section class="admin-section">
+            <section class="admin-section admin-section--active" data-admin-section="start">
               <h4>Стартовая страница</h4>
               <label>Заголовок (HTML допускается)<input id="admin-start-title" class="admin-input" type="text"></label>
               <label>Подсказка<input id="admin-start-hint" class="admin-input" type="text"></label>
@@ -157,9 +163,10 @@
               <label>Пункт 2 правил<input id="admin-rules-item-1" class="admin-input" type="text"></label>
               <label>Пункт 3 правил<input id="admin-rules-item-2" class="admin-input" type="text"></label>
               <label>Подсказка в правилах<input id="admin-rules-tip" class="admin-input" type="text"></label>
+              <label>Время игры (секунды)<input id="admin-timer-seconds" class="admin-input" type="number" min="20" max="600" step="5"></label>
             </section>
 
-            <section class="admin-section">
+            <section class="admin-section" data-admin-section="step">
               <h4>Этап игры</h4>
               <div class="admin-row">
                 <label>Сорт
@@ -172,12 +179,15 @@
                   <select id="admin-step" class="admin-input"></select>
                 </label>
               </div>
+              <div id="admin-step-tabs" class="admin-step-tabs"></div>
               <label>Состояние (state)<input id="admin-step-state" class="admin-input" type="text"></label>
               <label>Совет (advice)<input id="admin-step-advice" class="admin-input" type="text"></label>
-              <label>Вариант 1<input id="admin-opt-0" class="admin-input" type="text"></label>
-              <label>Вариант 2<input id="admin-opt-1" class="admin-input" type="text"></label>
-              <label>Вариант 3<input id="admin-opt-2" class="admin-input" type="text"></label>
-              <label>Вариант 4<input id="admin-opt-3" class="admin-input" type="text"></label>
+              <div class="admin-step-options" id="admin-step-options">
+                <label class="admin-option-row" draggable="true" data-opt-index="0"><span class="admin-drag-handle">↕</span>Вариант 1<input id="admin-opt-0" class="admin-input" type="text"></label>
+                <label class="admin-option-row" draggable="true" data-opt-index="1"><span class="admin-drag-handle">↕</span>Вариант 2<input id="admin-opt-1" class="admin-input" type="text"></label>
+                <label class="admin-option-row" draggable="true" data-opt-index="2"><span class="admin-drag-handle">↕</span>Вариант 3<input id="admin-opt-2" class="admin-input" type="text"></label>
+                <label class="admin-option-row" draggable="true" data-opt-index="3"><span class="admin-drag-handle">↕</span>Вариант 4<input id="admin-opt-3" class="admin-input" type="text"></label>
+              </div>
               <label>Правильный ответ (номер)
                 <select id="admin-correct" class="admin-input">
                   <option value="0">1</option>
@@ -188,7 +198,7 @@
               </label>
             </section>
 
-            <section class="admin-section">
+            <section class="admin-section" data-admin-section="ui">
               <h4>Тексты UI</h4>
               <label>«Выбери действие…»<input id="admin-msg-choose" class="admin-input" type="text"></label>
               <label>«Хороший ход»<input id="admin-msg-good" class="admin-input" type="text"></label>
@@ -198,7 +208,7 @@
               <label>Кнопка «Поделиться игрой»<input id="admin-share-btn" class="admin-input" type="text"></label>
             </section>
 
-            <section class="admin-section">
+            <section class="admin-section" data-admin-section="final">
               <h4>Финальное окно</h4>
               <label>Заголовок финала<input id="admin-final-title" class="admin-input" type="text"></label>
               <label>Подпись перед строкой meta<textarea id="admin-final-meta-template" class="admin-input admin-input--multiline" rows="2"></textarea></label>

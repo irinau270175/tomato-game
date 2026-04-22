@@ -479,11 +479,13 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 .admin-lock { display: flex; gap: 8px; margin-top: 10px; }
 .admin-input {
   flex: 1;
+  width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(149, 203, 178, 0.3);
   background: rgba(12, 22, 19, 0.9);
   color: #e8f4ef;
-  padding: 9px;
+  padding: 11px;
+  font-size: .95rem;
 }
 .admin-input--multiline {
   min-height: 58px;
@@ -495,9 +497,20 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 }
 .admin-editor-wrap { display: none; margin-top: 10px; }
 .admin-editor-wrap--show { display: block; }
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.admin-tab { padding: 7px 10px; }
+.admin-tab--active {
+  border: 1px solid rgba(126, 217, 87, 0.55);
+  box-shadow: 0 0 0 2px rgba(126, 217, 87, 0.2);
+}
 .admin-form-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 .admin-section {
@@ -508,12 +521,49 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   display: grid;
   gap: 7px;
 }
+.admin-section { display: none; }
+.admin-section--active { display: grid; }
 .admin-section h4 { margin: 0 0 2px; font-size: .92rem; color: #d5efe4; }
-.admin-section label { display: grid; gap: 4px; font-size: .78rem; color: #b4cbc1; }
+.admin-section label { display: grid; gap: 4px; font-size: .86rem; color: #b4cbc1; }
 .admin-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 7px;
+}
+.admin-step-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.admin-step-tab {
+  border: 1px solid rgba(149, 203, 178, 0.24);
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: rgba(14, 29, 24, 0.96);
+  color: #dff1e8;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.admin-step-tab--active {
+  border-color: rgba(126, 217, 87, 0.65);
+  box-shadow: 0 0 0 2px rgba(126, 217, 87, 0.18);
+}
+.admin-step-options { display: grid; gap: 6px; }
+.admin-option-row {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(149, 203, 178, 0.2);
+  border-radius: 9px;
+  padding: 6px;
+  cursor: grab;
+}
+.admin-option-row.dragging {
+  opacity: 0.72;
+  border-color: rgba(126, 217, 87, 0.65);
+}
+.admin-drag-handle {
+  font-size: .72rem;
+  color: #9fc7b6;
 }
 .admin-json {
   width: 100%;

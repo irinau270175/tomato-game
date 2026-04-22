@@ -92,6 +92,9 @@ const nodes = {
   adminRulesItem1: document.getElementById("admin-rules-item-1"),
   adminRulesItem2: document.getElementById("admin-rules-item-2"),
   adminRulesTip: document.getElementById("admin-rules-tip"),
+  adminTimerSeconds: document.getElementById("admin-timer-seconds"),
+  adminStepOptions: document.getElementById("admin-step-options"),
+  adminStepTabs: document.getElementById("admin-step-tabs"),
   adminVariety: document.getElementById("admin-variety"),
   adminStep: document.getElementById("admin-step"),
   adminStepState: document.getElementById("admin-step-state"),
@@ -204,6 +207,7 @@ function buildDefaultContent() {
       ],
     },
     game: {
+      timerSeconds: 60,
       stageNames: deepClone(STAGE_NAMES),
       steps: {
         loved: deepClone(STEP_EVENTS_LOVED),
@@ -1186,7 +1190,7 @@ async function startGame() {
   STATE.heat = STATE.scenario === "greenhouse" ? 54 : 44;
   STATE.growth = 0;
   STATE.tomatoes = 0;
-  STATE.timeLeft = 60;
+  STATE.timeLeft = Math.max(20, Math.min(600, Number(CONTENT?.game?.timerSeconds || 60)));
   STATE.timedOut = false;
   STATE.selectedActionId = null;
   STATE.mood = "healthy";
@@ -1233,6 +1237,61 @@ function lockAdmin() {
   nodes.adminEditorWrap.classList.remove("admin-editor-wrap--show");
 }
 
+function switchAdminSection(sectionId = "start") {
+  const tabs = document.querySelectorAll("[data-admin-tab]");
+  const sections = document.querySelectorAll("[data-admin-section]");
+  tabs.forEach((btn) => {
+    const active = btn.getAttribute("data-admin-tab") === sectionId;
+    btn.classList.toggle("admin-tab--active", active);
+  });
+  sections.forEach((el) => {
+    const active = el.getAttribute("data-admin-section") === sectionId;
+    el.classList.toggle("admin-section--active", active);
+  });
+}
+
+function initAdminOptionDnD() {
+  if (!nodes.adminStepOptions) return;
+  const rows = Array.from(nodes.adminStepOptions.querySelectorAll(".admin-option-row"));
+  let dragIndex = null;
+
+  const getInputByIndex = (idx) => document.getElementById(`admin-opt-${idx}`);
+
+  const moveOptionValue = (from, to) => {
+    if (from === to) return;
+    const values = [0, 1, 2, 3].map((i) => getInputByIndex(i)?.value || "");
+    const moved = values.splice(from, 1)[0];
+    values.splice(to, 0, moved);
+    values.forEach((v, i) => {
+      const input = getInputByIndex(i);
+      if (input) input.value = v;
+    });
+    readAdminFormToContent();
+    setAdminUnsaved(true);
+    scheduleAdminAutosave();
+  };
+
+  rows.forEach((row) => {
+    row.addEventListener("dragstart", () => {
+      dragIndex = Number(row.dataset.optIndex || -1);
+      row.classList.add("dragging");
+    });
+    row.addEventListener("dragend", () => {
+      row.classList.remove("dragging");
+    });
+    row.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+    row.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const dropIndex = Number(row.dataset.optIndex || -1);
+      if (dragIndex < 0 || dropIndex < 0) return;
+      moveOptionValue(dragIndex, dropIndex);
+      dragIndex = null;
+    });
+  });
+}
+
 let ADMIN_CONTENT = null;
 
 function getSelectedAdminStep() {
@@ -1248,6 +1307,25 @@ function fillAdminStepSelect() {
   const variety = nodes.adminVariety?.value || "loved";
   const steps = ADMIN_CONTENT.game.steps[variety] || [];
   nodes.adminStep.innerHTML = steps.map((_, idx) => `<option value="${idx}">Этап ${idx + 1}</option>`).join("");
+  renderAdminStepTabs();
+}
+
+function renderAdminStepTabs() {
+  if (!nodes.adminStepTabs || !nodes.adminStep) return;
+  const current = Number(nodes.adminStep.value || 0);
+  const total = nodes.adminStep.options?.length || 0;
+  nodes.adminStepTabs.innerHTML = Array.from({ length: total }, (_, idx) => {
+    const active = idx === current ? "admin-step-tab--active" : "";
+    return `<button type="button" class="admin-step-tab ${active}" data-step-tab="${idx}">${idx + 1}</button>`;
+  }).join("");
+  nodes.adminStepTabs.querySelectorAll("[data-step-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.getAttribute("data-step-tab") || 0);
+      nodes.adminStep.value = String(idx);
+      fillAdminStepFields();
+      renderAdminStepTabs();
+    });
+  });
 }
 
 function fillAdminStepFields() {
@@ -1262,6 +1340,7 @@ function fillAdminStepFields() {
   nodes.adminOpt3.value = step.options?.[3] || "";
   const correct = Array.isArray(step.correct) ? Number(step.correct[0] ?? 0) : Number(step.correct ?? 0);
   nodes.adminCorrect.value = String(Math.max(0, Math.min(3, correct)));
+  renderAdminStepTabs();
 }
 
 function fillAdminGeneralFields() {
@@ -1274,6 +1353,7 @@ function fillAdminGeneralFields() {
   nodes.adminRulesItem1.value = ADMIN_CONTENT.start.rulesItems?.[1] || "";
   nodes.adminRulesItem2.value = ADMIN_CONTENT.start.rulesItems?.[2] || "";
   nodes.adminRulesTip.value = ADMIN_CONTENT.start.tip || "";
+  nodes.adminTimerSeconds.value = String(Number(ADMIN_CONTENT.game.timerSeconds || 60));
   nodes.adminMsgChoose.value = ADMIN_CONTENT.game.messages.chooseAction || "";
   nodes.adminMsgGood.value = ADMIN_CONTENT.game.messages.goodMove || "";
   nodes.adminMsgBad.value = ADMIN_CONTENT.game.messages.borderline || "";
@@ -1311,6 +1391,7 @@ function readAdminFormToContent() {
     nodes.adminRulesItem2.value,
   ];
   ADMIN_CONTENT.start.tip = nodes.adminRulesTip.value;
+  ADMIN_CONTENT.game.timerSeconds = Math.max(20, Math.min(600, Number(nodes.adminTimerSeconds.value || 60)));
   ADMIN_CONTENT.game.messages.chooseAction = nodes.adminMsgChoose.value;
   ADMIN_CONTENT.game.messages.goodMove = nodes.adminMsgGood.value;
   ADMIN_CONTENT.game.messages.borderline = nodes.adminMsgBad.value;
@@ -1349,6 +1430,7 @@ function fillAdminEditorWithDraft(defaultContent) {
   fillAdminGeneralFields();
   fillAdminStepSelect();
   fillAdminStepFields();
+  switchAdminSection("start");
   setAdminUnsaved(false);
 }
 
@@ -1466,6 +1548,11 @@ function bindEvents() {
       openAdminPanel();
     });
   }
+  document.querySelectorAll("[data-admin-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      switchAdminSection(btn.getAttribute("data-admin-tab") || "start");
+    });
+  });
   if (nodes.adminCloseBtn) {
     nodes.adminCloseBtn.addEventListener("click", closeAdminPanel);
   }
@@ -1536,7 +1623,7 @@ function bindEvents() {
       scheduleAdminAutosave();
     });
   });
-  [nodes.adminStartTitle, nodes.adminStartHint, nodes.adminStartButton, nodes.adminRulesTitle, nodes.adminRulesItem0, nodes.adminRulesItem1, nodes.adminRulesItem2, nodes.adminRulesTip, nodes.adminMsgChoose, nodes.adminMsgGood, nodes.adminMsgBad, nodes.adminNextBtn, nodes.adminRestartBtn, nodes.adminShareBtn, nodes.adminFinalTitle, nodes.adminFinalMetaTemplate, nodes.adminArch0Title, nodes.adminArch0Phrase, nodes.adminArch1Title, nodes.adminArch1Phrase, nodes.adminArch2Title, nodes.adminArch2Phrase, nodes.adminArch3Title, nodes.adminArch3Phrase, nodes.adminLevelWeak, nodes.adminLevelGood, nodes.adminLevelTopLoved, nodes.adminLevelTopGiant, nodes.adminFinalResultTemplate, nodes.adminFinalTimeoutTemplate].forEach((el) => {
+  [nodes.adminStartTitle, nodes.adminStartHint, nodes.adminStartButton, nodes.adminRulesTitle, nodes.adminRulesItem0, nodes.adminRulesItem1, nodes.adminRulesItem2, nodes.adminRulesTip, nodes.adminTimerSeconds, nodes.adminMsgChoose, nodes.adminMsgGood, nodes.adminMsgBad, nodes.adminNextBtn, nodes.adminRestartBtn, nodes.adminShareBtn, nodes.adminFinalTitle, nodes.adminFinalMetaTemplate, nodes.adminArch0Title, nodes.adminArch0Phrase, nodes.adminArch1Title, nodes.adminArch1Phrase, nodes.adminArch2Title, nodes.adminArch2Phrase, nodes.adminArch3Title, nodes.adminArch3Phrase, nodes.adminLevelWeak, nodes.adminLevelGood, nodes.adminLevelTopLoved, nodes.adminLevelTopGiant, nodes.adminFinalResultTemplate, nodes.adminFinalTimeoutTemplate].forEach((el) => {
     if (!el) return;
     el.addEventListener("input", () => {
       readAdminFormToContent();
@@ -1544,6 +1631,7 @@ function bindEvents() {
       scheduleAdminAutosave();
     });
   });
+  initAdminOptionDnD();
 
   nodes.restartBtn.addEventListener("click", () => {
     stopTimer();
