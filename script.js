@@ -170,7 +170,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-5";
+const BUILD_VERSION = "2026-04-24-6";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -911,18 +911,18 @@ function getBasketSlot(index) {
     { x: 0.59, y: 0.35, s: 0.94, a: 5 },
   ];
   const mobilePile = [
-    { x: 0.31, y: 0.50, s: 1.05, a: -8 },
-    { x: 0.40, y: 0.47, s: 1.10, a: -4 },
-    { x: 0.49, y: 0.46, s: 1.12, a: 0 },
-    { x: 0.58, y: 0.47, s: 1.10, a: 4 },
-    { x: 0.67, y: 0.50, s: 1.05, a: 8 },
-    { x: 0.35, y: 0.42, s: 0.98, a: -7 },
-    { x: 0.44, y: 0.39, s: 1.02, a: -3 },
-    { x: 0.53, y: 0.38, s: 1.03, a: 2 },
-    { x: 0.62, y: 0.41, s: 0.99, a: 6 },
-    { x: 0.41, y: 0.34, s: 0.92, a: -5 },
-    { x: 0.50, y: 0.32, s: 0.95, a: 0 },
-    { x: 0.59, y: 0.34, s: 0.92, a: 5 },
+    { x: 0.31, y: 0.44, s: 1.05, a: -8 },
+    { x: 0.40, y: 0.41, s: 1.10, a: -4 },
+    { x: 0.49, y: 0.40, s: 1.12, a: 0 },
+    { x: 0.58, y: 0.41, s: 1.10, a: 4 },
+    { x: 0.67, y: 0.44, s: 1.05, a: 8 },
+    { x: 0.35, y: 0.36, s: 0.98, a: -7 },
+    { x: 0.44, y: 0.33, s: 1.02, a: -3 },
+    { x: 0.53, y: 0.32, s: 1.03, a: 2 },
+    { x: 0.62, y: 0.35, s: 0.99, a: 6 },
+    { x: 0.41, y: 0.29, s: 0.92, a: -5 },
+    { x: 0.50, y: 0.27, s: 0.95, a: 0 },
+    { x: 0.59, y: 0.29, s: 0.92, a: 5 },
   ];
   const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const pile = isMobile ? mobilePile : desktopPile;
@@ -963,7 +963,7 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [14, 13, 11, 10, 11, 12, 10, 4, 10, 13, 12, 8];
+  const spriteLiftByStep = [20, 19, 17, 16, 17, 18, 16, 9, 16, 19, 18, 14];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
