@@ -813,10 +813,24 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .scene { min-height: clamp(270px, 48svh, 430px); min-height: clamp(270px, 48dvh, 430px); }
-  .live-basket { background-size: 156%; }
+  .scene {
+    --plant-left: 61%;
+    --plant-shift: 2px;
+    --plant-width: min(182px, 45vw);
+    --plant-height: min(240px, 58vw);
+    --plant-bottom: 14px;
+    --basket-left: 27.8%;
+    --basket-width: min(164px, 40vw);
+    --basket-height: min(114px, 28vw);
+    --basket-bottom: 28px;
+    --plant-grow-w: 66px;
+    --plant-grow-h: 98px;
+    min-height: clamp(248px, 45svh, 360px);
+    min-height: clamp(248px, 45dvh, 360px);
+  }
+  .live-basket { background-size: 142%; }
   .setup-grid { grid-template-columns: 1fr; }
-  .scene { min-height: clamp(270px, 48svh, 430px); min-height: clamp(270px, 48dvh, 430px); }
+  .scene { min-height: clamp(248px, 45svh, 360px); min-height: clamp(248px, 45dvh, 360px); }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
   .action-panel {
     margin-top: 8px;
@@ -836,9 +850,18 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 
 @media (max-width: 680px) {
   .quick-actions--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .scene { min-height: clamp(262px, 47svh, 400px); min-height: clamp(262px, 47dvh, 400px); }
+  .scene {
+    --plant-width: min(176px, 44vw);
+    --plant-height: min(232px, 58vw);
+    --basket-width: min(156px, 39vw);
+    --basket-height: min(108px, 27vw);
+    --plant-grow-w: 62px;
+    --plant-grow-h: 92px;
+    min-height: clamp(242px, 44svh, 340px);
+    min-height: clamp(242px, 44dvh, 340px);
+  }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 154%; }
+  .live-basket { background-size: 138%; }
   .quick { min-height: 40px; font-size: .84rem; }
   .basket-tomato { width: 38px; height: 41px; }
   .basket-tomato::before { top: -4px; width: 15px; height: 8px; }
@@ -860,9 +883,15 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 
 @media (max-width: 480px) {
   .scene {
-    min-height: clamp(248px, 45svh, 360px);
-    min-height: clamp(248px, 45dvh, 360px);
+    --plant-width: min(168px, 43vw);
+    --plant-height: min(222px, 56vw);
+    --basket-width: min(148px, 37vw);
+    --basket-height: min(102px, 25vw);
+    --plant-grow-w: 58px;
+    --plant-grow-h: 86px;
+    min-height: clamp(236px, 43svh, 320px);
+    min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 150%; }
+  .live-basket { background-size: 134%; }
 }

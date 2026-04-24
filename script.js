@@ -163,7 +163,7 @@ const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-3";
+const BUILD_VERSION = "2026-04-24-4";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -571,238 +571,8 @@ function trimTransparentImageData(imageData, width, height, pad = 2, alphaThresh
 
 async function preparePlantFrame(url) {
   if (PREPARED.frames[url]) return PREPARED.frames[url];
-  try {
-    const img = await loadImage(url);
-    const canvas = document.createElement("canvas");
-    const w = img.naturalWidth || 600;
-    const h = img.naturalHeight || 600;
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const d = imageData.data;
-
-    const frameMatch = url.match(/(\d+)\.webp$/i);
-    const frameNo = frameMatch ? Number(frameMatch[1]) : 0;
-    const isGiantFrame = url.includes("/giant/");
-
-    const isCandidate = (x, y) => {
-      if (y < Math.floor(h * 0.56)) return false;
-      const i = (y * w + x) * 4;
-      const a = d[i + 3];
-      if (a < 24) return false;
-      const r = d[i];
-      const g = d[i + 1];
-      const b = d[i + 2];
-      const isGreenStem = g > r + 14 && g > b + 10;
-      if (isGreenStem) return false;
-      const brownish = (r > 42 && g > 24 && b < 90 && r >= g && g >= b - 10);
-      const darkNeutral = (Math.max(r, g, b) - Math.min(r, g, b) < 35 && r < 175 && g < 175 && b < 175);
-      return brownish || darkNeutral;
-    };
-
-    const visited = new Uint8Array(w * h);
-    const qx = new Int32Array(w * h);
-    const qy = new Int32Array(w * h);
-    let qs = 0;
-    let qe = 0;
-
-    for (let x = 0; x < w; x += 1) {
-      const y = h - 1;
-      if (!isCandidate(x, y)) continue;
-      const id = y * w + x;
-      visited[id] = 1;
-      qx[qe] = x;
-      qy[qe] = y;
-      qe += 1;
-    }
-
-    const push = (x, y) => {
-      if (x < 0 || x >= w || y < 0 || y >= h) return;
-      const id = y * w + x;
-      if (visited[id]) return;
-      if (!isCandidate(x, y)) return;
-      visited[id] = 1;
-      qx[qe] = x;
-      qy[qe] = y;
-      qe += 1;
-    };
-
-    while (qs < qe) {
-      const x = qx[qs];
-      const y = qy[qs];
-      qs += 1;
-      const i = (y * w + x) * 4;
-      d[i + 3] = 0;
-      push(x + 1, y);
-      push(x - 1, y);
-      push(x, y + 1);
-      push(x, y - 1);
-    }
-
-    // Cleanup pass: below lower zone remove leftover soil while preserving center stem.
-    const stemLeft = Math.floor(w * 0.47);
-    const stemRight = Math.floor(w * 0.53);
-    const hardCutY = Math.floor(h * 0.78);
-    for (let y = hardCutY; y < h; y += 1) {
-      for (let x = 0; x < w; x += 1) {
-        const i = (y * w + x) * 4;
-        if (d[i + 3] < 18) continue;
-        const r = d[i];
-        const g = d[i + 1];
-        const b = d[i + 2];
-        const isGreen = g > r + 12 && g > b + 8;
-        const isProtectedStem = x >= stemLeft && x <= stemRight && isGreen;
-        if (!isProtectedStem) d[i + 3] = 0;
-      }
-    }
-
-    // Extra cleanup for giant 11-12 where soil remains around the base.
-    if (isGiantFrame && frameNo >= 11) {
-      const extraCutY = Math.floor(h * 0.68);
-      for (let y = extraCutY; y < h; y += 1) {
-        for (let x = 0; x < w; x += 1) {
-          const i = (y * w + x) * 4;
-          if (d[i + 3] < 14) continue;
-          const r = d[i];
-          const g = d[i + 1];
-          const b = d[i + 2];
-          const isGreen = g > r + 14 && g > b + 12;
-          const inStemCore = x >= Math.floor(w * 0.492) && x <= Math.floor(w * 0.508);
-          if (!(isGreen && inStemCore)) d[i + 3] = 0;
-        }
-      }
-    }
-
-    // Heal dark artifacts (black pits) by averaging bright neighbors.
-    const copy = new Uint8ClampedArray(d);
-    for (let y = 1; y < h - 1; y += 1) {
-      for (let x = 1; x < w - 1; x += 1) {
-        const i = (y * w + x) * 4;
-        const a = copy[i + 3];
-        if (a < 28) continue;
-        const r = copy[i];
-        const g = copy[i + 1];
-        const b = copy[i + 2];
-        const max = Math.max(r, g, b);
-        if (max > 74) continue;
-        let nr = 0;
-        let ng = 0;
-        let nb = 0;
-        let na = 0;
-        let count = 0;
-        for (let oy = -1; oy <= 1; oy += 1) {
-          for (let ox = -1; ox <= 1; ox += 1) {
-            if (ox === 0 && oy === 0) continue;
-            const ni = ((y + oy) * w + (x + ox)) * 4;
-            const nna = copy[ni + 3];
-            if (nna < 50) continue;
-            const nmax = Math.max(copy[ni], copy[ni + 1], copy[ni + 2]);
-            if (nmax < 68) continue;
-            nr += copy[ni];
-            ng += copy[ni + 1];
-            nb += copy[ni + 2];
-            na += nna;
-            count += 1;
-          }
-        }
-        if (count >= 3) {
-          d[i] = Math.round(nr / count);
-          d[i + 1] = Math.round(ng / count);
-          d[i + 2] = Math.round(nb / count);
-          d[i + 3] = Math.max(a, Math.round(na / count));
-        }
-      }
-    }
-
-    // Fill dark semi-transparent fringe to avoid black halos.
-    for (let y = 1; y < h - 1; y += 1) {
-      for (let x = 1; x < w - 1; x += 1) {
-        const i = (y * w + x) * 4;
-        const a = d[i + 3];
-        if (a <= 0 || a >= 230) continue;
-        const r = d[i];
-        const g = d[i + 1];
-        const b = d[i + 2];
-        const max = Math.max(r, g, b);
-        if (max > 90) continue;
-        let nr = 0;
-        let ng = 0;
-        let nb = 0;
-        let count = 0;
-        for (let oy = -1; oy <= 1; oy += 1) {
-          for (let ox = -1; ox <= 1; ox += 1) {
-            if (ox === 0 && oy === 0) continue;
-            const ni = ((y + oy) * w + (x + ox)) * 4;
-            const na = d[ni + 3];
-            if (na < 150) continue;
-            nr += d[ni];
-            ng += d[ni + 1];
-            nb += d[ni + 2];
-            count += 1;
-          }
-        }
-        if (count >= 2) {
-          d[i] = Math.round(nr / count);
-          d[i + 1] = Math.round(ng / count);
-          d[i + 2] = Math.round(nb / count);
-          d[i + 3] = Math.min(255, a + 40);
-        }
-      }
-    }
-
-    // Hard pass for dark spots on later stages (9-12): recolor dark pits from neighbors.
-    if (frameNo >= 9) {
-      const source = new Uint8ClampedArray(d);
-      for (let y = 2; y < h - 2; y += 1) {
-        for (let x = 2; x < w - 2; x += 1) {
-          const i = (y * w + x) * 4;
-          const a = source[i + 3];
-          if (a < 26) continue;
-          const r = source[i];
-          const g = source[i + 1];
-          const b = source[i + 2];
-          if (Math.max(r, g, b) > 88) continue;
-
-          let nr = 0;
-          let ng = 0;
-          let nb = 0;
-          let c = 0;
-          for (let oy = -2; oy <= 2; oy += 1) {
-            for (let ox = -2; ox <= 2; ox += 1) {
-              if (ox === 0 && oy === 0) continue;
-              const ni = ((y + oy) * w + (x + ox)) * 4;
-              const na = source[ni + 3];
-              if (na < 120) continue;
-              const rr = source[ni];
-              const gg = source[ni + 1];
-              const bb = source[ni + 2];
-              if (Math.max(rr, gg, bb) < 95) continue;
-              nr += rr;
-              ng += gg;
-              nb += bb;
-              c += 1;
-            }
-          }
-
-          if (c >= 5) {
-            d[i] = Math.round(nr / c);
-            d[i + 1] = Math.round(ng / c);
-            d[i + 2] = Math.round(nb / c);
-            d[i + 3] = Math.max(a, 200);
-          }
-        }
-      }
-    }
-
-    const prepared = trimTransparentImageData(imageData, w, h, 2, 18);
-    PREPARED.frames[url] = prepared;
-    return prepared;
-  } catch {
-    PREPARED.frames[url] = url;
-    return url;
-  }
+  PREPARED.frames[url] = url;
+  return url;
 }
 
 async function prepareFlyTomato(url) {
@@ -919,7 +689,6 @@ async function preloadVarietyAssets(variety) {
   if (!variety || STATE.preloaded[variety]) return;
   const urls = [...PLANT_FRAMES[variety], UI_ASSETS.basket, UI_ASSETS.flyTomato];
   await preloadImages(urls);
-  await Promise.all(PLANT_FRAMES[variety].map((url) => preparePlantFrame(url)));
   await prepareFlyTomato(UI_ASSETS.flyTomato);
   await prepareBasket(UI_ASSETS.basket);
   STATE.preloaded[variety] = true;
@@ -960,44 +729,20 @@ function renderStepContext() {
 function calibrateSceneLayout() {
   const scene = nodes.scene;
   if (!scene) return;
-  const rect = scene.getBoundingClientRect();
-  if (!rect.width) return;
-  const w = rect.width;
-  const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
-  if (!isMobile) {
-    [
-      "--plant-left",
-      "--plant-shift",
-      "--plant-width",
-      "--plant-height",
-      "--plant-bottom",
-      "--plant-grow-w",
-      "--plant-grow-h",
-      "--basket-left",
-      "--basket-width",
-      "--basket-height",
-      "--basket-bottom",
-    ].forEach((name) => scene.style.removeProperty(name));
-    return;
-  }
-
-  const plantWidth = Math.max(168, Math.min(204, Math.round(w * 0.47)));
-  const plantHeight = Math.round(plantWidth * 1.34);
-  const basketWidth = Math.max(150, Math.min(194, Math.round(w * 0.44)));
-  const basketHeight = Math.round(basketWidth * 0.70);
-
-  scene.style.setProperty("--plant-left", "61.5%");
-  scene.style.setProperty("--plant-shift", "2px");
-  scene.style.setProperty("--plant-width", `${plantWidth}px`);
-  scene.style.setProperty("--plant-height", `${plantHeight}px`);
-  scene.style.setProperty("--plant-bottom", "16px");
-  scene.style.setProperty("--plant-grow-w", "78px");
-  scene.style.setProperty("--plant-grow-h", "112px");
-  scene.style.setProperty("--basket-left", "27.8%");
-  scene.style.setProperty("--basket-width", `${basketWidth}px`);
-  scene.style.setProperty("--basket-height", `${basketHeight}px`);
-  scene.style.setProperty("--basket-bottom", "32px");
+  // Keep a single source of truth for geometry in CSS media rules.
+  [
+    "--plant-left",
+    "--plant-shift",
+    "--plant-width",
+    "--plant-height",
+    "--plant-bottom",
+    "--plant-grow-w",
+    "--plant-grow-h",
+    "--basket-left",
+    "--basket-width",
+    "--basket-height",
+    "--basket-bottom",
+  ].forEach((name) => scene.style.removeProperty(name));
 }
 
 function collapseMobileBrowserBar() {
@@ -1017,18 +762,18 @@ function isActionCorrect(stepEvent, selectedId) {
 
 function getBasketSlot(index) {
   const pile = [
-    { x: 0.31, y: 0.56, s: 1.08, a: -8 },
-    { x: 0.40, y: 0.53, s: 1.14, a: -4 },
-    { x: 0.49, y: 0.51, s: 1.18, a: 0 },
-    { x: 0.58, y: 0.53, s: 1.14, a: 4 },
-    { x: 0.67, y: 0.56, s: 1.08, a: 8 },
-    { x: 0.35, y: 0.46, s: 1.00, a: -7 },
-    { x: 0.44, y: 0.42, s: 1.06, a: -3 },
-    { x: 0.53, y: 0.41, s: 1.08, a: 2 },
-    { x: 0.62, y: 0.44, s: 1.02, a: 6 },
-    { x: 0.41, y: 0.35, s: 0.94, a: -5 },
-    { x: 0.50, y: 0.32, s: 0.98, a: 0 },
-    { x: 0.59, y: 0.35, s: 0.94, a: 5 },
+    { x: 0.31, y: 0.72, s: 1.08, a: -8 },
+    { x: 0.40, y: 0.69, s: 1.14, a: -4 },
+    { x: 0.49, y: 0.68, s: 1.18, a: 0 },
+    { x: 0.58, y: 0.69, s: 1.14, a: 4 },
+    { x: 0.67, y: 0.72, s: 1.08, a: 8 },
+    { x: 0.35, y: 0.63, s: 1.00, a: -7 },
+    { x: 0.44, y: 0.59, s: 1.06, a: -3 },
+    { x: 0.53, y: 0.58, s: 1.08, a: 2 },
+    { x: 0.62, y: 0.61, s: 1.02, a: 6 },
+    { x: 0.41, y: 0.52, s: 0.94, a: -5 },
+    { x: 0.50, y: 0.50, s: 0.98, a: 0 },
+    { x: 0.59, y: 0.52, s: 0.94, a: 5 },
   ];
   const p = pile[index % pile.length];
   const w = nodes.liveBasket.clientWidth || 300;
