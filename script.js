@@ -909,6 +909,50 @@ function renderStepContext() {
   nodes.adviceLine.textContent = preventOrphans(`Совет: ${stepEvent.advice}`);
 }
 
+function calibrateSceneLayout() {
+  const scene = nodes.scene;
+  if (!scene) return;
+  const rect = scene.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+
+  const w = rect.width;
+  const h = rect.height;
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+
+  if (!isMobile) {
+    [
+      "--plant-left",
+      "--plant-shift",
+      "--plant-width",
+      "--plant-height",
+      "--plant-bottom",
+      "--basket-left",
+      "--basket-width",
+      "--basket-height",
+      "--basket-bottom",
+    ].forEach((name) => scene.style.removeProperty(name));
+    return;
+  }
+
+  const aspect = w / Math.max(h, 1);
+  const plantWidthPx = Math.max(156, Math.min(242, Math.round(w * 0.42)));
+  const plantHeightPx = Math.round(plantWidthPx * 1.4);
+  const basketWidthPx = Math.max(176, Math.min(270, Math.round(w * 0.46)));
+  const basketHeightPx = Math.round(basketWidthPx * 0.69);
+  const plantLeftPct = Math.max(59.5, Math.min(66.5, 64 - ((aspect - 0.65) * 10)));
+  const basketLeftPct = Math.max(26.5, Math.min(31.8, 29.5 + ((aspect - 0.65) * 2.4)));
+
+  scene.style.setProperty("--plant-left", `${plantLeftPct.toFixed(2)}%`);
+  scene.style.setProperty("--plant-shift", `${Math.round(Math.max(0, 14 - ((w - 320) / 80)))}px`);
+  scene.style.setProperty("--plant-width", `${plantWidthPx}px`);
+  scene.style.setProperty("--plant-height", `${plantHeightPx}px`);
+  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 18 : 21}px`);
+  scene.style.setProperty("--basket-left", `${basketLeftPct.toFixed(2)}%`);
+  scene.style.setProperty("--basket-width", `${basketWidthPx}px`);
+  scene.style.setProperty("--basket-height", `${basketHeightPx}px`);
+  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 52 : 56}px`);
+}
+
 function isActionCorrect(stepEvent, selectedId) {
   if (Array.isArray(stepEvent.correct)) return stepEvent.correct.includes(selectedId);
   return selectedId === stepEvent.correct;
@@ -1203,6 +1247,7 @@ async function startGame() {
   nodes.liveCount.textContent = "🍅 0";
   nodes.liveBasket.innerHTML = "";
   nodes.liveBasket.style.backgroundImage = `url("${PREPARED.ui.basket || UI_ASSETS.basket}")`;
+  calibrateSceneLayout();
   nodes.nextStepBtn.disabled = false;
   if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
   if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
@@ -1651,6 +1696,16 @@ function bindEvents() {
     renderSetup();
     showScreen("start");
   });
+
+  let resizeRaf = null;
+  const onViewportChange = () => {
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      calibrateSceneLayout();
+    });
+  };
+  window.addEventListener("resize", onViewportChange, { passive: true });
+  window.addEventListener("orientationchange", onViewportChange, { passive: true });
 }
 
 function init() {
@@ -1663,6 +1718,7 @@ function init() {
   }
   renderSetup();
   renderTimer();
+  calibrateSceneLayout();
   bindEvents();
   showScreen("start");
 }
