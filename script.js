@@ -935,22 +935,24 @@ function calibrateSceneLayout() {
   }
 
   const aspect = w / Math.max(h, 1);
-  const plantWidthPx = Math.max(156, Math.min(242, Math.round(w * 0.42)));
-  const plantHeightPx = Math.round(plantWidthPx * 1.4);
-  const basketWidthPx = Math.max(176, Math.min(270, Math.round(w * 0.46)));
-  const basketHeightPx = Math.round(basketWidthPx * 0.69);
-  const plantLeftPct = Math.max(59.5, Math.min(66.5, 64 - ((aspect - 0.65) * 10)));
+  const plantWidthPx = Math.max(148, Math.min(212, Math.round(w * 0.36)));
+  const plantHeightPx = Math.round(plantWidthPx * 1.33);
+  const basketWidthPx = Math.max(170, Math.min(232, Math.round(w * 0.39)));
+  const basketHeightPx = Math.round(basketWidthPx * 0.67);
+  const plantLeftPct = Math.max(58.8, Math.min(65.4, 63.2 - ((aspect - 0.65) * 9)));
   const basketLeftPct = Math.max(26.5, Math.min(31.8, 29.5 + ((aspect - 0.65) * 2.4)));
 
   scene.style.setProperty("--plant-left", `${plantLeftPct.toFixed(2)}%`);
   scene.style.setProperty("--plant-shift", `${Math.round(Math.max(0, 14 - ((w - 320) / 80)))}px`);
   scene.style.setProperty("--plant-width", `${plantWidthPx}px`);
   scene.style.setProperty("--plant-height", `${plantHeightPx}px`);
-  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 18 : 21}px`);
+  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 15 : 19}px`);
+  scene.style.setProperty("--plant-grow-w", `${w <= 380 ? 84 : 96}px`);
+  scene.style.setProperty("--plant-grow-h", `${w <= 380 ? 126 : 142}px`);
   scene.style.setProperty("--basket-left", `${basketLeftPct.toFixed(2)}%`);
   scene.style.setProperty("--basket-width", `${basketWidthPx}px`);
   scene.style.setProperty("--basket-height", `${basketHeightPx}px`);
-  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 52 : 56}px`);
+  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 40 : 46}px`);
 }
 
 function isActionCorrect(stepEvent, selectedId) {
@@ -1064,20 +1066,14 @@ function animateTomatoToBasket() {
   const plantRect = nodes.plant.getBoundingClientRect();
   const basketRect = nodes.liveBasket.getBoundingClientRect();
   const slot = getBasketSlot(Math.max(STATE.tomatoes - 1, 0));
-  const sceneRect = nodes.scene.getBoundingClientRect();
-  const tomatoW = clamp(Math.round(sceneRect.width * 0.23), 92, 170);
-  const tomatoH = Math.round(tomatoW * 1.07);
-  const tomato = document.createElement("img");
-  tomato.className = "fly-tomato";
-  tomato.src = PREPARED.ui.flyTomato || UI_ASSETS.flyTomato;
-  tomato.alt = "";
-  tomato.draggable = false;
-  tomato.style.width = `${tomatoW}px`;
-  tomato.style.height = `${tomatoH}px`;
+  const tomato = document.createElement("span");
+  tomato.className = "basket-tomato fly-tomato-dot";
+  const tomatoW = 40;
+  const tomatoH = 43;
   const tomatoHalfW = tomatoW / 2;
   const tomatoHalfH = tomatoH / 2;
-  const startX = plantRect.left + (plantRect.width * 0.53) - tomatoHalfW;
-  const startY = plantRect.top + (plantRect.height * 0.38) - tomatoHalfH;
+  const startX = plantRect.left + (plantRect.width * 0.56) - tomatoHalfW;
+  const startY = plantRect.top + (plantRect.height * 0.45) - tomatoHalfH;
   tomato.style.left = `${startX}px`;
   tomato.style.top = `${startY}px`;
   document.body.appendChild(tomato);
@@ -1087,7 +1083,7 @@ function animateTomatoToBasket() {
     const targetY = basketRect.top + slot.y;
     const dx = targetX - (startX + tomatoHalfW);
     const dy = targetY - (startY + tomatoHalfH);
-    tomato.style.transform = `translate(${dx}px, ${dy}px) scale(0.92)`;
+    tomato.style.transform = `translate(${dx}px, ${dy}px) scale(0.95)`;
   });
 
   setTimeout(() => {
