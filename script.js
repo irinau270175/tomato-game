@@ -163,6 +163,7 @@ const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STATIC_CONTENT_FILE = "content.json";
+const BUILD_VERSION = "2026-04-24-2";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -292,9 +293,19 @@ function loadPublishedContent(defaultContent) {
   }
 }
 
+function getPublishedPatch() {
+  try {
+    const raw = localStorage.getItem(STORAGE_PUBLISHED_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 async function loadStaticContent(defaultContent) {
   try {
-    const response = await fetch(`${STATIC_CONTENT_FILE}?v=2026-04-24-1`, { cache: "no-store" });
+    const response = await fetch(`${STATIC_CONTENT_FILE}?v=${BUILD_VERSION}`, { cache: "no-store" });
     if (!response.ok) return deepClone(defaultContent);
     const parsed = await response.json();
     const merged = deepMerge(defaultContent, parsed);
@@ -1023,7 +1034,7 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [11, 10, 8, 7, 8, 9, 7, 2, 8, 11, 10, 6];
+  const spriteLiftByStep = [11, 10, 8, 7, 8, 9, 7, -1, 8, 11, 10, 6];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
@@ -1718,7 +1729,9 @@ function bindEvents() {
 function init() {
   const defaultContent = buildDefaultContent();
   loadStaticContent(defaultContent).then((staticContent) => {
-    applyContent(staticContent);
+    const publishedPatch = getPublishedPatch();
+    const effectiveContent = publishedPatch ? deepMerge(staticContent, publishedPatch) : staticContent;
+    applyContent(effectiveContent);
     renderSetup();
     renderTimer();
     calibrateSceneLayout();
