@@ -134,6 +134,12 @@ const nodes = {
   adminExportBtn: document.getElementById("admin-export-btn"),
   adminImportBtn: document.getElementById("admin-import-btn"),
   adminImportFile: document.getElementById("admin-import-file"),
+  adminGhOwner: document.getElementById("admin-gh-owner"),
+  adminGhRepo: document.getElementById("admin-gh-repo"),
+  adminGhBranch: document.getElementById("admin-gh-branch"),
+  adminGhPath: document.getElementById("admin-gh-path"),
+  adminGhToken: document.getElementById("admin-gh-token"),
+  adminPublishGhBtn: document.getElementById("admin-publish-gh-btn"),
   adminCloseBtn: document.getElementById("admin-close-btn"),
   adminStatus: document.getElementById("admin-status"),
   seasonOverlay: document.getElementById("season-overlay"),
@@ -162,8 +168,9 @@ let timerIntervalId = null;
 const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
+const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-4";
+const BUILD_VERSION = "2026-04-24-5";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -335,6 +342,134 @@ function setAdminUnsaved(flag) {
   adminHasUnsavedChanges = !!flag;
   if (!nodes.adminUnsavedBadge) return;
   nodes.adminUnsavedBadge.classList.toggle("admin-unsaved-badge--show", adminHasUnsavedChanges);
+}
+
+function inferGithubTargetFromUrl() {
+  const host = window.location.hostname || "";
+  if (!host.endsWith(".github.io")) return null;
+  const owner = host.replace(".github.io", "");
+  const seg = window.location.pathname.split("/").filter(Boolean);
+  const repo = seg.length > 0 ? seg[0] : `${owner}.github.io`;
+  return { owner, repo };
+}
+
+function loadGitHubSettings() {
+  const inferred = inferGithubTargetFromUrl() || {};
+  const fallback = {
+    owner: inferred.owner || "",
+    repo: inferred.repo || "",
+    branch: "main",
+    path: STATIC_CONTENT_FILE,
+    token: "",
+  };
+  try {
+    const raw = localStorage.getItem(STORAGE_GH_SETTINGS_KEY);
+    if (!raw) return fallback;
+    return { ...fallback, ...JSON.parse(raw) };
+  } catch {
+    return fallback;
+  }
+}
+
+function saveGitHubSettings(settings) {
+  try {
+    localStorage.setItem(STORAGE_GH_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function applyGitHubSettingsToForm() {
+  const s = loadGitHubSettings();
+  if (nodes.adminGhOwner) nodes.adminGhOwner.value = s.owner || "";
+  if (nodes.adminGhRepo) nodes.adminGhRepo.value = s.repo || "";
+  if (nodes.adminGhBranch) nodes.adminGhBranch.value = s.branch || "main";
+  if (nodes.adminGhPath) nodes.adminGhPath.value = s.path || STATIC_CONTENT_FILE;
+  if (nodes.adminGhToken) nodes.adminGhToken.value = s.token || "";
+}
+
+function getGitHubSettingsFromForm() {
+  return {
+    owner: (nodes.adminGhOwner?.value || "").trim(),
+    repo: (nodes.adminGhRepo?.value || "").trim(),
+    branch: (nodes.adminGhBranch?.value || "main").trim() || "main",
+    path: (nodes.adminGhPath?.value || STATIC_CONTENT_FILE).trim() || STATIC_CONTENT_FILE,
+    token: (nodes.adminGhToken?.value || "").trim(),
+  };
+}
+
+function bindGitHubSettingsInputs() {
+  [nodes.adminGhOwner, nodes.adminGhRepo, nodes.adminGhBranch, nodes.adminGhPath, nodes.adminGhToken].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("input", () => {
+      saveGitHubSettings(getGitHubSettingsFromForm());
+    });
+  });
+}
+
+function toBase64Unicode(value) {
+  return btoa(unescape(encodeURIComponent(value)));
+}
+
+async function githubFetchJson(url, token, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.message || `GitHub API error ${response.status}`);
+  }
+  return data;
+}
+
+async function publishContentToGitHub() {
+  try {
+    readAdminFormToContent();
+    const settings = getGitHubSettingsFromForm();
+    if (!settings.owner || !settings.repo || !settings.branch || !settings.path || !settings.token) {
+      throw new Error("Заполни owner/repo/branch/path/token для GitHub публикации.");
+    }
+    saveGitHubSettings(settings);
+    const url = `https://api.github.com/repos/${settings.owner}/${settings.repo}/contents/${settings.path}`;
+    let sha = null;
+    try {
+      const current = await githubFetchJson(`${url}?ref=${encodeURIComponent(settings.branch)}`, settings.token);
+      sha = current?.sha || null;
+    } catch (error) {
+      if (!String(error.message || "").includes("404")) throw error;
+    }
+
+    const jsonText = JSON.stringify(ADMIN_CONTENT, null, 2);
+    await githubFetchJson(url, settings.token, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `chore: update content via admin (${new Date().toISOString()})`,
+        content: toBase64Unicode(jsonText),
+        branch: settings.branch,
+        ...(sha ? { sha } : {}),
+      }),
+    });
+
+    localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
+    localStorage.setItem(STORAGE_PUBLISHED_KEY, JSON.stringify(ADMIN_CONTENT));
+    applyContent(ADMIN_CONTENT);
+    renderSetup();
+    if (screens.game.classList.contains("screen--active")) {
+      renderStepContext();
+      renderActions();
+      updatePlantVisual(false);
+    }
+    setAdminUnsaved(false);
+    setAdminStatus("Опубликовано в GitHub: content.json обновлён.");
+  } catch (error) {
+    setAdminStatus(`Ошибка GitHub публикации: ${error.message}`);
+  }
 }
 
 function scheduleAdminAutosave() {
@@ -761,20 +896,36 @@ function isActionCorrect(stepEvent, selectedId) {
 }
 
 function getBasketSlot(index) {
-  const pile = [
-    { x: 0.31, y: 0.72, s: 1.08, a: -8 },
-    { x: 0.40, y: 0.69, s: 1.14, a: -4 },
-    { x: 0.49, y: 0.68, s: 1.18, a: 0 },
-    { x: 0.58, y: 0.69, s: 1.14, a: 4 },
-    { x: 0.67, y: 0.72, s: 1.08, a: 8 },
-    { x: 0.35, y: 0.63, s: 1.00, a: -7 },
-    { x: 0.44, y: 0.59, s: 1.06, a: -3 },
-    { x: 0.53, y: 0.58, s: 1.08, a: 2 },
-    { x: 0.62, y: 0.61, s: 1.02, a: 6 },
-    { x: 0.41, y: 0.52, s: 0.94, a: -5 },
-    { x: 0.50, y: 0.50, s: 0.98, a: 0 },
-    { x: 0.59, y: 0.52, s: 0.94, a: 5 },
+  const desktopPile = [
+    { x: 0.31, y: 0.56, s: 1.08, a: -8 },
+    { x: 0.40, y: 0.53, s: 1.14, a: -4 },
+    { x: 0.49, y: 0.51, s: 1.18, a: 0 },
+    { x: 0.58, y: 0.53, s: 1.14, a: 4 },
+    { x: 0.67, y: 0.56, s: 1.08, a: 8 },
+    { x: 0.35, y: 0.46, s: 1.00, a: -7 },
+    { x: 0.44, y: 0.42, s: 1.06, a: -3 },
+    { x: 0.53, y: 0.41, s: 1.08, a: 2 },
+    { x: 0.62, y: 0.44, s: 1.02, a: 6 },
+    { x: 0.41, y: 0.35, s: 0.94, a: -5 },
+    { x: 0.50, y: 0.32, s: 0.98, a: 0 },
+    { x: 0.59, y: 0.35, s: 0.94, a: 5 },
   ];
+  const mobilePile = [
+    { x: 0.31, y: 0.50, s: 1.05, a: -8 },
+    { x: 0.40, y: 0.47, s: 1.10, a: -4 },
+    { x: 0.49, y: 0.46, s: 1.12, a: 0 },
+    { x: 0.58, y: 0.47, s: 1.10, a: 4 },
+    { x: 0.67, y: 0.50, s: 1.05, a: 8 },
+    { x: 0.35, y: 0.42, s: 0.98, a: -7 },
+    { x: 0.44, y: 0.39, s: 1.02, a: -3 },
+    { x: 0.53, y: 0.38, s: 1.03, a: 2 },
+    { x: 0.62, y: 0.41, s: 0.99, a: 6 },
+    { x: 0.41, y: 0.34, s: 0.92, a: -5 },
+    { x: 0.50, y: 0.32, s: 0.95, a: 0 },
+    { x: 0.59, y: 0.34, s: 0.92, a: 5 },
+  ];
+  const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const pile = isMobile ? mobilePile : desktopPile;
   const p = pile[index % pile.length];
   const w = nodes.liveBasket.clientWidth || 300;
   const h = nodes.liveBasket.clientHeight || 220;
@@ -1273,6 +1424,7 @@ function readAdminFormToContent() {
 
 function fillAdminEditorWithDraft(defaultContent) {
   ADMIN_CONTENT = getDraftContent(defaultContent);
+  applyGitHubSettingsToForm();
   fillAdminGeneralFields();
   fillAdminStepSelect();
   fillAdminStepFields();
@@ -1419,6 +1571,7 @@ function bindEvents() {
   }
   if (nodes.adminSaveDraftBtn) nodes.adminSaveDraftBtn.addEventListener("click", saveDraftFromEditor);
   if (nodes.adminPublishBtn) nodes.adminPublishBtn.addEventListener("click", publishFromEditor);
+  if (nodes.adminPublishGhBtn) nodes.adminPublishGhBtn.addEventListener("click", publishContentToGitHub);
   if (nodes.adminExportBtn) nodes.adminExportBtn.addEventListener("click", exportAdminJson);
   if (nodes.adminImportBtn && nodes.adminImportFile) {
     nodes.adminImportBtn.addEventListener("click", () => nodes.adminImportFile.click());
@@ -1477,6 +1630,7 @@ function bindEvents() {
       scheduleAdminAutosave();
     });
   });
+  bindGitHubSettingsInputs();
   initAdminOptionDnD();
 
   nodes.restartBtn.addEventListener("click", () => {

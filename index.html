@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2026-04-24-4">
+  <link rel="stylesheet" href="style.css?v=2026-04-24-5">
 </head>
 <body>
   <main class="app">
@@ -228,11 +228,27 @@
               <label>Текст перед итогом (таймаут)<textarea id="admin-final-timeout-template" class="admin-input admin-input--multiline" rows="3"></textarea></label>
             </section>
           </div>
+          <section class="admin-publish-block">
+            <h4>Автопубликация в GitHub</h4>
+            <p class="admin-note">После редактирования нажми «Опубликовать в GitHub» — обновится `content.json` в репозитории.</p>
+            <div class="admin-row">
+              <label>Владелец (owner)<input id="admin-gh-owner" class="admin-input" type="text" placeholder="username"></label>
+              <label>Репозиторий<input id="admin-gh-repo" class="admin-input" type="text" placeholder="repo-name"></label>
+            </div>
+            <div class="admin-row">
+              <label>Ветка<input id="admin-gh-branch" class="admin-input" type="text" placeholder="main"></label>
+              <label>Путь файла<input id="admin-gh-path" class="admin-input" type="text" value="content.json"></label>
+            </div>
+            <label>GitHub Token (fine-grained, Contents: Read and Write)
+              <input id="admin-gh-token" class="admin-input" type="password" placeholder="github_pat_...">
+            </label>
+          </section>
           <div class="admin-actions">
             <button id="admin-prev-step-btn" class="btn btn--ghost" type="button">Этап ←</button>
             <button id="admin-next-step-btn" class="btn btn--ghost" type="button">Этап →</button>
             <button id="admin-save-draft-btn" class="btn btn--soft" type="button">Сохранить черновик</button>
             <button id="admin-publish-btn" class="btn btn--primary" type="button">Опубликовать</button>
+            <button id="admin-publish-gh-btn" class="btn btn--primary" type="button">Опубликовать в GitHub</button>
             <button id="admin-export-btn" class="btn btn--ghost" type="button">Экспорт JSON</button>
             <button id="admin-import-btn" class="btn btn--ghost" type="button">Импорт JSON</button>
             <button id="admin-close-btn" class="btn btn--ghost" type="button">Закрыть</button>
@@ -245,6 +261,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=2026-04-24-4"></script>
+  <script src="script.js?v=2026-04-24-5"></script>
 </body>
 </html>
