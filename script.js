@@ -162,6 +162,7 @@ let timerIntervalId = null;
 const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
+const STATIC_CONTENT_FILE = "content.json";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -177,6 +178,29 @@ function preventOrphans(text) {
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function deepMerge(base, patch) {
+  if (Array.isArray(base) || Array.isArray(patch)) {
+    return patch === undefined ? deepClone(base) : deepClone(patch);
+  }
+  if (!base || typeof base !== "object") {
+    return patch === undefined ? base : patch;
+  }
+  if (!patch || typeof patch !== "object") {
+    return deepClone(base);
+  }
+  const out = { ...base };
+  Object.keys(patch).forEach((key) => {
+    const b = base[key];
+    const p = patch[key];
+    if (b && p && typeof b === "object" && typeof p === "object" && !Array.isArray(b) && !Array.isArray(p)) {
+      out[key] = deepMerge(b, p);
+    } else {
+      out[key] = deepClone(p);
+    }
+  });
+  return out;
 }
 
 function buildDefaultContent() {
@@ -263,6 +287,19 @@ function loadPublishedContent(defaultContent) {
     const raw = localStorage.getItem(STORAGE_PUBLISHED_KEY);
     if (!raw) return deepClone(defaultContent);
     return JSON.parse(raw);
+  } catch {
+    return deepClone(defaultContent);
+  }
+}
+
+async function loadStaticContent(defaultContent) {
+  try {
+    const response = await fetch(`${STATIC_CONTENT_FILE}?v=2026-04-24-1`, { cache: "no-store" });
+    if (!response.ok) return deepClone(defaultContent);
+    const parsed = await response.json();
+    const merged = deepMerge(defaultContent, parsed);
+    validateAdminContentShape(merged);
+    return merged;
   } catch {
     return deepClone(defaultContent);
   }
@@ -986,7 +1023,7 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [16, 14, 12, 10, 12, 14, 10, 9, 9, 12, 11, 7];
+  const spriteLiftByStep = [11, 10, 8, 7, 8, 9, 7, 2, 8, 11, 10, 6];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
@@ -1680,17 +1717,22 @@ function bindEvents() {
 
 function init() {
   const defaultContent = buildDefaultContent();
-  try {
+  loadStaticContent(defaultContent).then((staticContent) => {
+    applyContent(staticContent);
+    renderSetup();
+    renderTimer();
+    calibrateSceneLayout();
+    bindEvents();
+    showScreen("start");
+  }).catch(() => {
     const published = loadPublishedContent(defaultContent);
     applyContent(published);
-  } catch {
-    applyContent(defaultContent);
-  }
-  renderSetup();
-  renderTimer();
-  calibrateSceneLayout();
-  bindEvents();
-  showScreen("start");
+    renderSetup();
+    renderTimer();
+    calibrateSceneLayout();
+    bindEvents();
+    showScreen("start");
+  });
 }
 
 init();
