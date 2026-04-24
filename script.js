@@ -917,7 +917,9 @@ function calibrateSceneLayout() {
 
   const w = rect.width;
   const h = rect.height;
-  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  const isMobile =
+    window.matchMedia("(max-width: 1024px)").matches ||
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
   if (!isMobile) {
     [
@@ -926,6 +928,8 @@ function calibrateSceneLayout() {
       "--plant-width",
       "--plant-height",
       "--plant-bottom",
+      "--plant-grow-w",
+      "--plant-grow-h",
       "--basket-left",
       "--basket-width",
       "--basket-height",
@@ -935,24 +939,24 @@ function calibrateSceneLayout() {
   }
 
   const aspect = w / Math.max(h, 1);
-  const plantWidthPx = Math.max(148, Math.min(212, Math.round(w * 0.36)));
-  const plantHeightPx = Math.round(plantWidthPx * 1.33);
-  const basketWidthPx = Math.max(170, Math.min(232, Math.round(w * 0.39)));
+  const plantWidthPx = Math.max(136, Math.min(194, Math.round(w * 0.33)));
+  const plantHeightPx = Math.round(plantWidthPx * 1.28);
+  const basketWidthPx = Math.max(160, Math.min(210, Math.round(w * 0.35)));
   const basketHeightPx = Math.round(basketWidthPx * 0.67);
-  const plantLeftPct = Math.max(58.8, Math.min(65.4, 63.2 - ((aspect - 0.65) * 9)));
+  const plantLeftPct = Math.max(58.8, Math.min(64.8, 62.4 - ((aspect - 0.65) * 8)));
   const basketLeftPct = Math.max(26.5, Math.min(31.8, 29.5 + ((aspect - 0.65) * 2.4)));
 
   scene.style.setProperty("--plant-left", `${plantLeftPct.toFixed(2)}%`);
-  scene.style.setProperty("--plant-shift", `${Math.round(Math.max(0, 14 - ((w - 320) / 80)))}px`);
+  scene.style.setProperty("--plant-shift", `${Math.round(Math.max(0, 10 - ((w - 320) / 80)))}px`);
   scene.style.setProperty("--plant-width", `${plantWidthPx}px`);
   scene.style.setProperty("--plant-height", `${plantHeightPx}px`);
-  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 15 : 19}px`);
-  scene.style.setProperty("--plant-grow-w", `${w <= 380 ? 84 : 96}px`);
-  scene.style.setProperty("--plant-grow-h", `${w <= 380 ? 126 : 142}px`);
+  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 13 : 17}px`);
+  scene.style.setProperty("--plant-grow-w", `${w <= 380 ? 72 : 82}px`);
+  scene.style.setProperty("--plant-grow-h", `${w <= 380 ? 106 : 120}px`);
   scene.style.setProperty("--basket-left", `${basketLeftPct.toFixed(2)}%`);
   scene.style.setProperty("--basket-width", `${basketWidthPx}px`);
   scene.style.setProperty("--basket-height", `${basketHeightPx}px`);
-  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 40 : 46}px`);
+  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 34 : 40}px`);
 }
 
 function isActionCorrect(stepEvent, selectedId) {

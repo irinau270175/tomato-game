@@ -746,11 +746,12 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
       "actions"
       "panel";
   }
-  .studio-stage { min-height: 340px; margin-top: 0; }
+  .studio-stage { min-height: 340px; margin-top: 0; width: 100%; max-width: 100%; }
   .control-panel {
     position: static;
-    max-width: 96%;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     min-height: 0;
     background: transparent;
     padding: 0;
@@ -812,54 +813,54 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-left: 66%;
     --plant-shift: 14px;
-    --plant-width: min(208px, 35vw);
-    --plant-height: min(274px, 47vw);
+    --plant-width: min(196px, 33vw);
+    --plant-height: min(258px, 44vw);
     --plant-bottom: 25px;
     --basket-left: 30%;
-    --basket-width: min(226px, 37vw);
-    --basket-height: min(156px, 27vw);
-    --basket-bottom: 50px;
-    --plant-grow-w: 112px;
-    --plant-grow-h: 162px;
+    --basket-width: min(206px, 34vw);
+    --basket-height: min(142px, 24vw);
+    --basket-bottom: 46px;
+    --plant-grow-w: 90px;
+    --plant-grow-h: 132px;
   }
-  .live-basket { background-size: 170%; }
+  .live-basket { background-size: 156%; }
   .setup-grid { grid-template-columns: 1fr; }
   .scene { min-height: clamp(300px, 52svh, 480px); min-height: clamp(300px, 52dvh, 480px); }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
   .action-panel {
     margin-top: 8px;
-    max-width: 96%;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
     position: sticky;
     bottom: 6px;
     z-index: 22;
   }
   .controls { padding: 8px; gap: 4px; }
-  .quick { padding: 7px 9px; min-height: 38px; font-size: .76rem; }
+  .quick-actions--four { align-items: stretch; }
+  .quick { width: 100%; padding: 8px 9px; min-height: 42px; font-size: .82rem; line-height: 1.2; }
   .admin-form-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 680px) {
   .quick-actions--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .control-panel,
-  .action-panel { max-width: 95%; }
   .scene {
     --plant-left: 62%;
     --plant-shift: 10px;
-    --plant-width: min(186px, 38vw);
-    --plant-height: min(248px, 52vw);
-    --plant-bottom: 21px;
+    --plant-width: min(172px, 35vw);
+    --plant-height: min(228px, 47vw);
+    --plant-bottom: 18px;
     --basket-left: 28.3%;
-    --basket-width: min(208px, 42vw);
-    --basket-height: min(144px, 29vw);
-    --basket-bottom: 46px;
-    --plant-grow-w: 98px;
-    --plant-grow-h: 146px;
+    --basket-width: min(188px, 38vw);
+    --basket-height: min(130px, 26vw);
+    --basket-bottom: 42px;
+    --plant-grow-w: 80px;
+    --plant-grow-h: 118px;
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 176%; }
-  .quick { min-height: 34px; font-size: .72rem; }
+  .live-basket { background-size: 152%; }
+  .quick { min-height: 40px; font-size: .84rem; }
   .basket-tomato { width: 38px; height: 41px; }
   .basket-tomato::before { top: -4px; width: 15px; height: 8px; }
   .cloud { animation-duration: 42s; }
@@ -886,14 +887,14 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     --plant-height: min(224px, 58vw);
     --plant-bottom: 16px;
     --basket-left: 28%;
-    --basket-width: min(194px, 45vw);
-    --basket-height: min(132px, 31vw);
-    --basket-bottom: 42px;
-    --plant-grow-w: 88px;
-    --plant-grow-h: 130px;
+    --basket-width: min(176px, 41vw);
+    --basket-height: min(122px, 28vw);
+    --basket-bottom: 36px;
+    --plant-grow-w: 74px;
+    --plant-grow-h: 108px;
     min-height: clamp(280px, 50svh, 430px);
     min-height: clamp(280px, 50dvh, 430px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 182%; }
+  .live-basket { background-size: 148%; }
 }
