@@ -64,6 +64,7 @@ const nodes = {
   progressValue: document.getElementById("progress-value"),
   stateLabel: document.getElementById("state-label"),
   reactionLine: document.getElementById("reaction-line"),
+  actionReactionLine: document.getElementById("action-reaction-line"),
   scene: document.getElementById("scene"),
   plant: document.getElementById("plant"),
   plantSprite: document.getElementById("plant-sprite"),
@@ -170,7 +171,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-6";
+const BUILD_VERSION = "2026-04-24-7";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -520,10 +521,12 @@ function applyContent(content) {
   if (nodes.shareBtn) nodes.shareBtn.textContent = CONTENT.final.shareButton;
 
   const miniLabels = document.querySelectorAll(".mini-stats span");
+  const sceneHarvestLabel = document.getElementById("scene-harvest-label");
+  const sceneTimerLabel = document.getElementById("scene-timer-label");
   if (miniLabels[0]) miniLabels[0].textContent = CONTENT.game.labels.step;
   if (miniLabels[1]) miniLabels[1].textContent = CONTENT.game.labels.state;
-  if (miniLabels[2]) miniLabels[2].textContent = CONTENT.game.labels.harvest;
-  if (miniLabels[3]) miniLabels[3].textContent = CONTENT.game.labels.timer;
+  if (sceneHarvestLabel) sceneHarvestLabel.textContent = CONTENT.game.labels.harvest;
+  if (sceneTimerLabel) sceneTimerLabel.textContent = CONTENT.game.labels.timer;
 }
 
 function formatTime(totalSeconds) {
@@ -547,6 +550,17 @@ function stopTimer() {
 function setShareStatus(text) {
   if (!nodes.shareStatus) return;
   nodes.shareStatus.textContent = text || "";
+}
+
+function setReactionMessage(text, options = {}) {
+  const { alert = false, pulse = true, color = "" } = options;
+  const lines = [nodes.reactionLine, nodes.actionReactionLine].filter(Boolean);
+  lines.forEach((line) => {
+    line.textContent = text;
+    line.classList.toggle("reaction-line--alert", alert);
+    line.classList.toggle("reaction-line--pulse", pulse);
+    line.style.color = color || "";
+  });
 }
 
 async function shareGame() {
@@ -579,8 +593,10 @@ async function shareGame() {
 
 function startTimer() {
   stopTimer();
-  nodes.reactionLine.classList.remove("reaction-line--alert");
-  nodes.reactionLine.classList.add("reaction-line--pulse");
+  setReactionMessage(
+    nodes.reactionLine?.textContent || preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+    { alert: false, pulse: true, color: "#c7ffd8" },
+  );
   renderTimer();
   timerIntervalId = setInterval(() => {
     STATE.timeLeft -= 1;
@@ -593,8 +609,10 @@ function startTimer() {
     STATE.water = 0;
     clampStats();
     updatePlantVisual(true);
-    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.timeOut || "Время вышло. Сезон завершён.");
-    nodes.reactionLine.classList.add("reaction-line--alert");
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.timeOut || "Время вышло. Сезон завершён."),
+      { alert: true, pulse: true, color: "#ffd86b" },
+    );
     finishGame({ noBurst: true, timeout: true });
   }, 1000);
 }
@@ -963,8 +981,10 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [20, 19, 17, 16, 17, 18, 16, 9, 16, 19, 18, 14];
-  let spriteLift = spriteLiftByStep[frameIndex] || 0;
+  const isMobileLayout = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const spriteLiftDesktop = [14, 9, 8, 7, 8, 9, 8, 5, 10, 13, 12, 14];
+  const spriteLiftMobile = [20, 19, 17, 16, 17, 18, 16, 9, 16, 19, 18, 14];
+  let spriteLift = (isMobileLayout ? spriteLiftMobile : spriteLiftDesktop)[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
   nodes.stageTitle.textContent = STAGE_NAMES[stage];
@@ -1047,9 +1067,10 @@ function animateTomatoToBasket() {
 
 function playStep() {
   if (STATE.selectedActionId === null) {
-    nodes.reactionLine.classList.add("reaction-line--pulse");
-    nodes.reactionLine.classList.remove("reaction-line--alert");
-    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.chooseFirst || "Сначала выбери 1 вариант.");
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.chooseFirst || "Сначала выбери 1 вариант."),
+      { alert: false, pulse: true, color: "#c7ffd8" },
+    );
     return;
   }
 
@@ -1062,16 +1083,16 @@ function playStep() {
     STATE.tomatoes += 1;
     nodes.liveCount.textContent = `🍅 ${STATE.tomatoes}`;
     animateTomatoToBasket();
-    nodes.reactionLine.classList.add("reaction-line--pulse");
-    nodes.reactionLine.classList.remove("reaction-line--alert");
-    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.goodMove || "Хороший ход");
-    nodes.reactionLine.style.color = "#1d6f41";
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.goodMove || "Хороший ход"),
+      { alert: false, pulse: true, color: "#1d6f41" },
+    );
   } else {
     applyWrongStep();
-    nodes.reactionLine.classList.add("reaction-line--pulse");
-    nodes.reactionLine.classList.remove("reaction-line--alert");
-    nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани");
-    nodes.reactionLine.style.color = "#a53a36";
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани"),
+      { alert: false, pulse: true, color: "#a53a36" },
+    );
   }
 
   clampStats();
@@ -1133,8 +1154,12 @@ function finishGame(options = {}) {
 Попробуй тоже`;
 
   nodes.nextStepBtn.disabled = true;
-  if (!timeout) nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.seasonDone || "Сезон завершён. Отличная работа!");
-  if (!timeout) nodes.reactionLine.classList.add("reaction-line--pulse");
+  if (!timeout) {
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.seasonDone || "Сезон завершён. Отличная работа!"),
+      { alert: false, pulse: true, color: "#c7ffd8" },
+    );
+  }
   setShareStatus("");
   if (nodes.seasonOverlay) nodes.seasonOverlay.classList.add("season-overlay--show");
   if (noBurst) {
@@ -1201,10 +1226,10 @@ async function startGame() {
   setShareStatus("");
 
   showScreen("game");
-  nodes.reactionLine.style.color = "#c7ffd8";
-  nodes.reactionLine.classList.remove("reaction-line--alert");
-  nodes.reactionLine.classList.add("reaction-line--pulse");
-  nodes.reactionLine.textContent = preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа.");
+  setReactionMessage(
+    preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+    { alert: false, pulse: true, color: "#c7ffd8" },
+  );
   renderTimer();
   startTimer();
   renderStepContext();
@@ -1641,8 +1666,10 @@ function bindEvents() {
     if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
     if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
     setShareStatus("");
-    nodes.reactionLine.classList.remove("reaction-line--alert");
-    nodes.reactionLine.classList.remove("reaction-line--pulse");
+    setReactionMessage(
+      preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+      { alert: false, pulse: false, color: "#c7ffd8" },
+    );
     renderSetup();
     showScreen("start");
   });

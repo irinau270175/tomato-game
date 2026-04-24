@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2026-04-24-6">
+  <link rel="stylesheet" href="style.css?v=2026-04-24-7">
 </head>
 <body>
   <main class="app">
@@ -60,10 +60,8 @@
         </div>
 
         <div class="mini-stats">
-          <div><span>Этап</span><strong id="progress-value">1/12</strong></div>
-          <div><span>Состояние</span><strong id="state-label">Здоровый</strong></div>
-          <div><span>Урожай</span><strong id="live-count">🍅 0</strong></div>
-          <div><span>Таймер</span><strong id="timer-value">01:00</strong></div>
+          <div class="mini-stat-card mini-stat-card--step"><span>Этап</span><strong id="progress-value">1/12</strong></div>
+          <div class="mini-stat-card mini-stat-card--state"><span>Состояние</span><strong id="state-label">Здоровый</strong></div>
           <p id="reaction-line" class="reaction-line reaction-line--inline">Выбери действие для этого этапа.</p>
         </div>
       </aside>
@@ -79,6 +77,16 @@
           <div class="cloud cloud-1"></div>
           <div class="cloud cloud-2"></div>
           <div class="cloud cloud-3"></div>
+          <div class="scene-hud">
+            <div class="scene-chip">
+              <span id="scene-harvest-label">Урожай</span>
+              <strong id="live-count">🍅 0</strong>
+            </div>
+            <div class="scene-chip">
+              <span id="scene-timer-label">Таймер</span>
+              <strong id="timer-value">01:00</strong>
+            </div>
+          </div>
 
           <div id="plant" class="plant stage-0 mood-healthy">
             <img id="plant-sprite" class="plant-sprite" src="" alt="Куст томата">
@@ -116,6 +124,7 @@
       </section>
 
       <section class="controls action-panel">
+        <p id="action-reaction-line" class="reaction-line reaction-line--inline action-reaction-line">Выбери действие для этого этапа.</p>
         <div id="quick-actions" class="quick-actions quick-actions--four"></div>
         <button id="next-step-btn" class="btn btn--primary btn--wide">Пройти этап</button>
       </section>
@@ -261,6 +270,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=2026-04-24-6"></script>
+  <script src="script.js?v=2026-04-24-7"></script>
 </body>
 </html>

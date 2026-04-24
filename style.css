@@ -122,7 +122,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 .mini-stats {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: repeat(5, minmax(0, 1fr));
+  grid-template-rows: auto auto auto;
   gap: 6px;
   min-height: 0;
 }
@@ -206,6 +206,32 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 .scene--greenhouse .cloud { opacity: 0; }
 .scene--greenhouse .field-glow,
 .scene--greenhouse .grass-strip { opacity: 0; }
+.scene-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 8;
+  display: grid;
+  gap: 6px;
+}
+.scene-chip {
+  min-width: 108px;
+  background: rgba(13, 28, 24, 0.86);
+  border: 1px solid rgba(149, 203, 178, 0.28);
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+.scene-chip span {
+  display: block;
+  font-size: .65rem;
+  color: #9dc2b3;
+}
+.scene-chip strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 1rem;
+  line-height: 1.05;
+}
 
 .plant {
   --growth: 0;
@@ -430,6 +456,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 
 .controls { display: grid; gap: 6px; margin-top: 0; padding: 12px; border-radius: 14px; border: 1px solid rgba(149, 203, 178, 0.22); background: rgba(25, 46, 39, 0.74); align-content: start; }
 .action-panel { grid-area: actions; margin-top: 11px; }
+.action-reaction-line { margin: 0; }
 .reaction-line {
   background: linear-gradient(180deg, rgba(33, 62, 50, 0.92), rgba(20, 40, 33, 0.94));
   border: 1px solid rgba(126, 217, 87, 0.34);
@@ -755,9 +782,9 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
     grid-template-areas:
+      "panel"
       "stage"
-      "actions"
-      "panel";
+      "actions";
   }
   .studio-stage { min-height: 340px; margin-top: 0; width: 100%; max-width: 100%; }
   .control-panel {
@@ -776,6 +803,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     padding: 8px 10px;
   }
   .control-top .tag { display: none; }
+  #advice-line { display: none; }
   #stage-title { font-size: 1rem; line-height: 1.2; }
   #state-line,
   #advice-line {
@@ -785,11 +813,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .mini-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto auto auto;
-    gap: 5px;
-  }
+  .mini-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto; gap: 5px; }
   .mini-stats > div {
     display: flex;
     align-items: baseline;
@@ -800,7 +824,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-width: 0;
   }
   .mini-stats > .reaction-line {
-    grid-column: 1 / -1;
+    display: none;
   }
   .mini-stats span {
     display: inline;
@@ -838,6 +862,16 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(248px, 45svh, 360px);
     min-height: clamp(248px, 45dvh, 360px);
   }
+  .scene-hud {
+    top: 10px;
+    left: 10px;
+    gap: 5px;
+  }
+  .scene-chip {
+    min-width: 96px;
+    padding: 5px 7px;
+  }
+  .scene-chip strong { font-size: .95rem; }
   .live-basket { background-size: 116%; }
   .setup-grid { grid-template-columns: 1fr; }
   .scene { min-height: clamp(248px, 45svh, 360px); min-height: clamp(248px, 45dvh, 360px); }
@@ -848,9 +882,8 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     max-width: 100%;
     margin-left: 0;
     margin-right: 0;
-    position: sticky;
-    bottom: 6px;
-    z-index: 22;
+    position: static;
+    z-index: 1;
   }
   .controls { padding: 8px; gap: 4px; }
   .quick-actions--four { align-items: stretch; }
