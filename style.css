@@ -18,10 +18,11 @@ body {
     radial-gradient(circle at 8% 92%, rgba(126, 217, 87, 0.14), transparent 34%),
     linear-gradient(155deg, #0f1a17 0%, #152521 45%, #243930 100%);
   padding: 10px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-.app { max-width: 980px; margin: 0 auto; height: calc(100svh - 20px); height: calc(100dvh - 20px); overflow: hidden; }
+.app { max-width: 980px; margin: 0 auto; min-height: calc(100svh - 20px); min-height: calc(100dvh - 20px); overflow: visible; }
 .screen { display: none !important; }
 .screen--active { display: block !important; animation: fadeUp .25s ease; height: auto; }
 .screen--active.game-studio { display: grid !important; }
@@ -730,9 +731,9 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
     grid-template-areas:
-      "panel"
       "stage"
-      "actions";
+      "actions"
+      "panel";
   }
   .studio-stage { min-height: 340px; margin-top: 0; }
   .control-panel {
@@ -819,7 +820,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 }
 
 @media (max-width: 680px) {
-  .quick-actions--four { grid-template-columns: 1fr; }
+  .quick-actions--four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .control-panel,
   .action-panel { max-width: 95%; }
   .scene {
@@ -835,10 +836,23 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
   .live-basket { background-size: 176%; }
+  .quick { min-height: 34px; font-size: .72rem; }
   .basket-tomato { width: 38px; height: 41px; }
   .basket-tomato::before { top: -4px; width: 15px; height: 8px; }
   .cloud { animation-duration: 42s; }
   .admin-open-btn { right: 10px; bottom: 10px; padding: 8px 11px; border-radius: 11px; }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .app { height: auto; overflow: visible; }
+  .game-studio {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "stage"
+      "actions"
+      "panel";
+  }
 }
 
 @media (max-width: 480px) {
