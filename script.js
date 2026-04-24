@@ -163,7 +163,7 @@ const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-2";
+const BUILD_VERSION = "2026-04-24-3";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -960,21 +960,54 @@ function renderStepContext() {
 function calibrateSceneLayout() {
   const scene = nodes.scene;
   if (!scene) return;
-  // Rely on CSS media rules for cross-device consistency.
-  // JS geometry overrides caused differences between DevTools and real devices.
-  [
-    "--plant-left",
-    "--plant-shift",
-    "--plant-width",
-    "--plant-height",
-    "--plant-bottom",
-    "--plant-grow-w",
-    "--plant-grow-h",
-    "--basket-left",
-    "--basket-width",
-    "--basket-height",
-    "--basket-bottom",
-  ].forEach((name) => scene.style.removeProperty(name));
+  const rect = scene.getBoundingClientRect();
+  if (!rect.width) return;
+  const w = rect.width;
+  const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+  if (!isMobile) {
+    [
+      "--plant-left",
+      "--plant-shift",
+      "--plant-width",
+      "--plant-height",
+      "--plant-bottom",
+      "--plant-grow-w",
+      "--plant-grow-h",
+      "--basket-left",
+      "--basket-width",
+      "--basket-height",
+      "--basket-bottom",
+    ].forEach((name) => scene.style.removeProperty(name));
+    return;
+  }
+
+  const plantWidth = Math.max(168, Math.min(204, Math.round(w * 0.47)));
+  const plantHeight = Math.round(plantWidth * 1.34);
+  const basketWidth = Math.max(150, Math.min(194, Math.round(w * 0.44)));
+  const basketHeight = Math.round(basketWidth * 0.70);
+
+  scene.style.setProperty("--plant-left", "61.5%");
+  scene.style.setProperty("--plant-shift", "2px");
+  scene.style.setProperty("--plant-width", `${plantWidth}px`);
+  scene.style.setProperty("--plant-height", `${plantHeight}px`);
+  scene.style.setProperty("--plant-bottom", "16px");
+  scene.style.setProperty("--plant-grow-w", "78px");
+  scene.style.setProperty("--plant-grow-h", "112px");
+  scene.style.setProperty("--basket-left", "27.8%");
+  scene.style.setProperty("--basket-width", `${basketWidth}px`);
+  scene.style.setProperty("--basket-height", `${basketHeight}px`);
+  scene.style.setProperty("--basket-bottom", "32px");
+}
+
+function collapseMobileBrowserBar() {
+  if (!window.matchMedia("(hover: none) and (pointer: coarse)").matches) return;
+  const run = () => {
+    window.scrollTo(0, 1);
+  };
+  setTimeout(run, 60);
+  setTimeout(run, 240);
+  setTimeout(run, 520);
 }
 
 function isActionCorrect(stepEvent, selectedId) {
@@ -1034,7 +1067,7 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [11, 10, 8, 7, 8, 9, 7, -1, 8, 11, 10, 6];
+  const spriteLiftByStep = [14, 13, 11, 10, 11, 12, 10, 4, 10, 13, 12, 8];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
@@ -1724,6 +1757,7 @@ function bindEvents() {
   };
   window.addEventListener("resize", onViewportChange, { passive: true });
   window.addEventListener("orientationchange", onViewportChange, { passive: true });
+  window.addEventListener("load", collapseMobileBrowserBar, { passive: true });
 }
 
 function init() {
@@ -1735,6 +1769,7 @@ function init() {
     renderSetup();
     renderTimer();
     calibrateSceneLayout();
+    collapseMobileBrowserBar();
     bindEvents();
     showScreen("start");
   }).catch(() => {
@@ -1743,6 +1778,7 @@ function init() {
     renderSetup();
     renderTimer();
     calibrateSceneLayout();
+    collapseMobileBrowserBar();
     bindEvents();
     showScreen("start");
   });
