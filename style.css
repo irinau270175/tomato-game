@@ -813,17 +813,17 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-left: 66%;
     --plant-shift: 14px;
-    --plant-width: min(196px, 33vw);
-    --plant-height: min(258px, 44vw);
+    --plant-width: min(214px, 36vw);
+    --plant-height: min(286px, 48vw);
     --plant-bottom: 25px;
     --basket-left: 30%;
-    --basket-width: min(206px, 34vw);
-    --basket-height: min(142px, 24vw);
-    --basket-bottom: 46px;
-    --plant-grow-w: 90px;
-    --plant-grow-h: 132px;
+    --basket-width: min(220px, 36vw);
+    --basket-height: min(152px, 25vw);
+    --basket-bottom: 48px;
+    --plant-grow-w: 100px;
+    --plant-grow-h: 146px;
   }
-  .live-basket { background-size: 156%; }
+  .live-basket { background-size: 162%; }
   .setup-grid { grid-template-columns: 1fr; }
   .scene { min-height: clamp(300px, 52svh, 480px); min-height: clamp(300px, 52dvh, 480px); }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
@@ -848,18 +848,18 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-left: 62%;
     --plant-shift: 10px;
-    --plant-width: min(172px, 35vw);
-    --plant-height: min(228px, 47vw);
-    --plant-bottom: 18px;
+    --plant-width: min(196px, 40vw);
+    --plant-height: min(262px, 54vw);
+    --plant-bottom: 19px;
     --basket-left: 28.3%;
-    --basket-width: min(188px, 38vw);
-    --basket-height: min(130px, 26vw);
-    --basket-bottom: 42px;
-    --plant-grow-w: 80px;
-    --plant-grow-h: 118px;
+    --basket-width: min(206px, 42vw);
+    --basket-height: min(142px, 29vw);
+    --basket-bottom: 44px;
+    --plant-grow-w: 92px;
+    --plant-grow-h: 134px;
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 152%; }
+  .live-basket { background-size: 166%; }
   .quick { min-height: 40px; font-size: .84rem; }
   .basket-tomato { width: 38px; height: 41px; }
   .basket-tomato::before { top: -4px; width: 15px; height: 8px; }
@@ -883,18 +883,18 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-left: 60%;
     --plant-shift: 0px;
-    --plant-width: min(170px, 44vw);
-    --plant-height: min(224px, 58vw);
-    --plant-bottom: 16px;
+    --plant-width: min(182px, 47vw);
+    --plant-height: min(244px, 63vw);
+    --plant-bottom: 17px;
     --basket-left: 28%;
-    --basket-width: min(176px, 41vw);
-    --basket-height: min(122px, 28vw);
-    --basket-bottom: 36px;
-    --plant-grow-w: 74px;
-    --plant-grow-h: 108px;
+    --basket-width: min(194px, 45vw);
+    --basket-height: min(134px, 31vw);
+    --basket-bottom: 40px;
+    --plant-grow-w: 86px;
+    --plant-grow-h: 124px;
     min-height: clamp(280px, 50svh, 430px);
     min-height: clamp(280px, 50dvh, 430px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 148%; }
+  .live-basket { background-size: 172%; }
 }

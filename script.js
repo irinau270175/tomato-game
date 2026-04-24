@@ -912,51 +912,21 @@ function renderStepContext() {
 function calibrateSceneLayout() {
   const scene = nodes.scene;
   if (!scene) return;
-  const rect = scene.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-
-  const w = rect.width;
-  const h = rect.height;
-  const isMobile =
-    window.matchMedia("(max-width: 1024px)").matches ||
-    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
-  if (!isMobile) {
-    [
-      "--plant-left",
-      "--plant-shift",
-      "--plant-width",
-      "--plant-height",
-      "--plant-bottom",
-      "--plant-grow-w",
-      "--plant-grow-h",
-      "--basket-left",
-      "--basket-width",
-      "--basket-height",
-      "--basket-bottom",
-    ].forEach((name) => scene.style.removeProperty(name));
-    return;
-  }
-
-  const aspect = w / Math.max(h, 1);
-  const plantWidthPx = Math.max(136, Math.min(194, Math.round(w * 0.33)));
-  const plantHeightPx = Math.round(plantWidthPx * 1.28);
-  const basketWidthPx = Math.max(160, Math.min(210, Math.round(w * 0.35)));
-  const basketHeightPx = Math.round(basketWidthPx * 0.67);
-  const plantLeftPct = Math.max(58.8, Math.min(64.8, 62.4 - ((aspect - 0.65) * 8)));
-  const basketLeftPct = Math.max(26.5, Math.min(31.8, 29.5 + ((aspect - 0.65) * 2.4)));
-
-  scene.style.setProperty("--plant-left", `${plantLeftPct.toFixed(2)}%`);
-  scene.style.setProperty("--plant-shift", `${Math.round(Math.max(0, 10 - ((w - 320) / 80)))}px`);
-  scene.style.setProperty("--plant-width", `${plantWidthPx}px`);
-  scene.style.setProperty("--plant-height", `${plantHeightPx}px`);
-  scene.style.setProperty("--plant-bottom", `${w <= 380 ? 13 : 17}px`);
-  scene.style.setProperty("--plant-grow-w", `${w <= 380 ? 72 : 82}px`);
-  scene.style.setProperty("--plant-grow-h", `${w <= 380 ? 106 : 120}px`);
-  scene.style.setProperty("--basket-left", `${basketLeftPct.toFixed(2)}%`);
-  scene.style.setProperty("--basket-width", `${basketWidthPx}px`);
-  scene.style.setProperty("--basket-height", `${basketHeightPx}px`);
-  scene.style.setProperty("--basket-bottom", `${w <= 380 ? 34 : 40}px`);
+  // Rely on CSS media rules for cross-device consistency.
+  // JS geometry overrides caused differences between DevTools and real devices.
+  [
+    "--plant-left",
+    "--plant-shift",
+    "--plant-width",
+    "--plant-height",
+    "--plant-bottom",
+    "--plant-grow-w",
+    "--plant-grow-h",
+    "--basket-left",
+    "--basket-width",
+    "--basket-height",
+    "--basket-bottom",
+  ].forEach((name) => scene.style.removeProperty(name));
 }
 
 function isActionCorrect(stepEvent, selectedId) {
@@ -1016,9 +986,9 @@ function updatePlantVisual(withReaction = false) {
   if (nodes.plantSprite) {
     nodes.plantSprite.src = PREPARED.frames[frames[frameIndex]] || frames[frameIndex];
   }
-  const spriteLiftByStep = [28, 25, 21, 17, 19, 22, 16, 14, 14, 18, 17, 11];
+  const spriteLiftByStep = [16, 14, 12, 10, 12, 14, 10, 9, 9, 12, 11, 7];
   let spriteLift = spriteLiftByStep[frameIndex] || 0;
-  if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 6;
+  if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
   nodes.stageTitle.textContent = STAGE_NAMES[stage];
   nodes.progressValue.textContent = `${Math.min(STATE.step + 1, getTotalSteps())}/${getTotalSteps()}`;
