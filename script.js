@@ -171,7 +171,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-24-8";
+const BUILD_VERSION = "2026-04-25-1";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -215,7 +215,7 @@ function deepMerge(base, patch) {
 function buildDefaultContent() {
   return {
     start: {
-      tag: "Визуальная мини-игра",
+      tag: "",
       titleHtml: "Выживи сезон<br>с томатом 🍅",
       hint: "Просто смотри на куст и помогай ему.",
       rulesTitle: "Как играть",
@@ -232,7 +232,7 @@ function buildDefaultContent() {
       title: "Выбери сценарий",
       varietyTitle: "Сорт",
       scenarioTitle: "Где растим",
-      goGameButton: "Высадить рассаду",
+      goGameButton: "Старт сезона.\nВысадить рассаду",
       varieties: deepClone(VARIETIES),
       scenarios: [
         { id: "greenhouse", name: "Теплица", desc: "Жара и духота" },
@@ -788,57 +788,8 @@ async function prepareFlyTomato(url) {
 
 async function prepareBasket(url) {
   if (PREPARED.ui.basket) return PREPARED.ui.basket;
-  try {
-    const img = await loadImage(url);
-    const w = img.naturalWidth || 800;
-    const h = img.naturalHeight || 800;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const d = imageData.data;
-    let minX = w;
-    let minY = h;
-    let maxX = -1;
-    let maxY = -1;
-
-    for (let y = 0; y < h; y += 1) {
-      for (let x = 0; x < w; x += 1) {
-        const i = (y * w + x) * 4;
-        if (d[i + 3] < 16) continue;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      }
-    }
-
-    if (maxX < 0 || maxY < 0) {
-      PREPARED.ui.basket = url;
-      return url;
-    }
-
-    const pad = 2;
-    minX = Math.max(0, minX - pad);
-    minY = Math.max(0, minY - pad);
-    maxX = Math.min(w - 1, maxX + pad);
-    maxY = Math.min(h - 1, maxY + pad);
-    const cw = maxX - minX + 1;
-    const ch = maxY - minY + 1;
-    const out = document.createElement("canvas");
-    out.width = cw;
-    out.height = ch;
-    const outCtx = out.getContext("2d");
-    outCtx.drawImage(canvas, minX, minY, cw, ch, 0, 0, cw, ch);
-    const trimmed = out.toDataURL("image/png");
-    PREPARED.ui.basket = trimmed;
-    return trimmed;
-  } catch {
-    PREPARED.ui.basket = url;
-    return url;
-  }
+  PREPARED.ui.basket = url;
+  return url;
 }
 
 async function preloadVarietyAssets(variety) {
@@ -986,7 +937,7 @@ function updatePlantVisual(withReaction = false) {
   }
   const isMobileLayout = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const spriteLiftDesktop = [14, 6, 5, 4, 5, 6, 5, 3, 10, 13, 12, 14];
-  const spriteLiftMobile = [20, 19, 17, 20, 21, 22, 20, 9, 16, 19, 18, 14];
+  const spriteLiftMobile = [20, 19, 17, 20, 21, 22, 20, 16, 16, 19, 18, 14];
   let spriteLift = (isMobileLayout ? spriteLiftMobile : spriteLiftDesktop)[frameIndex] || 0;
   if (STATE.variety === "giant" && frameIndex >= 10) spriteLift -= 4;
   nodes.plant.style.setProperty("--sprite-lift", `${spriteLift}px`);
