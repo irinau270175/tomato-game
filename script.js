@@ -69,6 +69,7 @@ const nodes = {
   plant: document.getElementById("plant"),
   plantSprite: document.getElementById("plant-sprite"),
   giantFruit: document.getElementById("giant-fruit"),
+  basketPanel: document.querySelector(".basket-panel"),
   liveBasket: document.getElementById("live-basket"),
   liveCount: document.getElementById("live-count"),
   timerValue: document.getElementById("timer-value"),
@@ -171,7 +172,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-2";
+const BUILD_VERSION = "2026-04-26-3";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -875,6 +876,31 @@ function calibrateSceneLayout() {
   ].forEach((name) => scene.style.removeProperty(name));
 }
 
+function logBasketDiagnostics(source = "") {
+  const basketPanel = nodes.basketPanel || nodes.liveBasket?.closest(".basket-panel");
+  if (!basketPanel || !nodes.liveBasket) return;
+  const panelStyle = getComputedStyle(basketPanel);
+  const basketStyle = getComputedStyle(nodes.liveBasket);
+  console.log({
+    source,
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      dpr: window.devicePixelRatio || 1,
+    },
+    basketPanel: {
+      width: panelStyle.width,
+      height: panelStyle.height,
+    },
+    liveBasket: {
+      width: basketStyle.width,
+      height: basketStyle.height,
+      backgroundSize: basketStyle.backgroundSize,
+      backgroundPosition: basketStyle.backgroundPosition,
+    },
+  });
+}
+
 function collapseMobileBrowserBar() {
   if (!window.matchMedia("(hover: none) and (pointer: coarse)").matches) return;
   const run = () => {
@@ -1197,6 +1223,7 @@ async function startGame() {
   nodes.liveBasket.innerHTML = "";
   nodes.liveBasket.style.backgroundImage = `url("${PREPARED.ui.basket || UI_ASSETS.basket}")`;
   calibrateSceneLayout();
+  logBasketDiagnostics("startGame:afterCalibrate");
   nodes.nextStepBtn.disabled = false;
   if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
   if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
@@ -1660,6 +1687,7 @@ function bindEvents() {
     if (resizeRaf) cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
       calibrateSceneLayout();
+      logBasketDiagnostics("viewportChange:afterCalibrate");
     });
   };
   window.addEventListener("resize", onViewportChange, { passive: true });
@@ -1676,6 +1704,7 @@ function init() {
     renderSetup();
     renderTimer();
     calibrateSceneLayout();
+    logBasketDiagnostics("init:then:afterCalibrate");
     collapseMobileBrowserBar();
     bindEvents();
     showScreen("start");
@@ -1685,6 +1714,7 @@ function init() {
     renderSetup();
     renderTimer();
     calibrateSceneLayout();
+    logBasketDiagnostics("init:catch:afterCalibrate");
     collapseMobileBrowserBar();
     bindEvents();
     showScreen("start");
