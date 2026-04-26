@@ -951,6 +951,6 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 216%; background-position: 50% 100%; }
+  .live-basket { background-size: 238%; background-position: 50% 100%; }
   .live-basket .basket-tomato { margin-top: -14px; margin-left: 6px; }
 }
