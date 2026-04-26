@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2026-04-26-final-logic-1">
+  <link rel="stylesheet" href="style.css?v=2026-04-26-start-admin-1">
 </head>
 <body>
   <main class="app">
@@ -26,7 +26,7 @@
         <p id="rules-tip" class="tip">Подсказка: если куст вянет — он ждёт не мотивационную речь, а полив.</p>
       </article>
 
-      <button id="start-btn" class="btn btn--primary">Старт сезона</button>
+      <button id="start-btn" class="btn btn--primary" type="button">Старт сезона</button>
     </section>
 
     <section id="screen-setup" class="card setup-inline">
@@ -47,7 +47,7 @@
         </article>
       </div>
 
-      <button id="go-game-btn" class="btn btn--primary" disabled>Старт сезона</button>
+      <button id="go-game-btn" class="btn btn--primary start-season-btn" disabled>Старт сезона: высадить рассаду</button>
     </section>
 
     <section id="screen-game" class="screen card game game-studio">
@@ -178,10 +178,12 @@
             <section class="admin-section" data-admin-section="step">
               <h4>Этап игры</h4>
               <div class="admin-row">
-                <label>Сорт
+                <label>Сорт и сценарий
                   <select id="admin-variety" class="admin-input">
-                    <option value="loved">Любимые томаты</option>
-                    <option value="giant">Гигантский томат</option>
+                    <option value="loved_greenhouse">Любимые томаты (теплица)</option>
+                    <option value="loved_ground">Любимые томаты (открытый грунт)</option>
+                    <option value="giant_greenhouse">Гигантские томаты (теплица)</option>
+                    <option value="giant_ground">Гигантские томаты (открытый грунт)</option>
                   </select>
                 </label>
                 <label>Этап
@@ -270,6 +272,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=2026-04-26-final-logic-1"></script>
+  <script src="script.js?v=2026-04-26-start-admin-1"></script>
 </body>
 </html>

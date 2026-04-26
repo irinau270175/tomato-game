@@ -55,6 +55,13 @@ const STEP_EVENTS_GIANT = [
   { state: "Финальный набор массы перед созреванием.", advice: "Дай плоду спокойно завершить цикл.", options: ["Сорвать рано", "Дать дозреть на кусте", "Поливать ежедневно без меры", "Притенить плод"], correct: [1, 3] },
 ];
 
+const STEP_VARIANTS = [
+  { id: "loved_greenhouse", label: "Любимые томаты (теплица)", variety: "loved", scenario: "greenhouse", legacy: "loved" },
+  { id: "loved_ground", label: "Любимые томаты (открытый грунт)", variety: "loved", scenario: "ground", legacy: "loved" },
+  { id: "giant_greenhouse", label: "Гигантские томаты (теплица)", variety: "giant", scenario: "greenhouse", legacy: "giant" },
+  { id: "giant_ground", label: "Гигантские томаты (открытый грунт)", variety: "giant", scenario: "ground", legacy: "giant" },
+];
+
 const screens = {
   start: document.getElementById("screen-start"),
   setup: document.getElementById("screen-setup"),
@@ -182,7 +189,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-final-logic-1";
+const BUILD_VERSION = "2026-04-26-start-admin-1";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -223,6 +230,37 @@ function deepMerge(base, patch) {
   return out;
 }
 
+function getDefaultStepsForLegacyKey(legacyKey) {
+  return legacyKey === "giant" ? STEP_EVENTS_GIANT : STEP_EVENTS_LOVED;
+}
+
+function normalizeContentShape(content, sourceContent = null) {
+  const normalized = deepClone(content);
+  normalized.game = normalized.game || {};
+  normalized.game.steps = normalized.game.steps || {};
+  const sourceSteps = sourceContent?.game?.steps || {};
+
+  STEP_VARIANTS.forEach(({ id, legacy }) => {
+    const sourceHasVariant = Object.prototype.hasOwnProperty.call(sourceSteps, id);
+    const sourceHasLegacy = Object.prototype.hasOwnProperty.call(sourceSteps, legacy);
+    if (sourceHasVariant) {
+      normalized.game.steps[id] = deepClone(sourceSteps[id]);
+    } else if (sourceHasLegacy) {
+      normalized.game.steps[id] = deepClone(sourceSteps[legacy]);
+    } else if (!normalized.game.steps[id]) {
+      normalized.game.steps[id] = deepClone(normalized.game.steps[legacy] || getDefaultStepsForLegacyKey(legacy));
+    }
+  });
+
+  normalized.game.steps.loved = deepClone(normalized.game.steps.loved || normalized.game.steps.loved_greenhouse);
+  normalized.game.steps.giant = deepClone(normalized.game.steps.giant || normalized.game.steps.giant_greenhouse);
+  return normalized;
+}
+
+function getStepVariantKey(variety = STATE.variety, scenario = STATE.scenario) {
+  return `${variety || "loved"}_${scenario || "greenhouse"}`;
+}
+
 function buildDefaultContent() {
   return {
     start: {
@@ -239,11 +277,11 @@ function buildDefaultContent() {
       startButton: "Старт сезона",
     },
     setup: {
-      tag: "Подготовка",
+      tag: "",
       title: "Выбери сценарий",
       varietyTitle: "Сорт",
       scenarioTitle: "Где растим",
-      goGameButton: "Старт сезона.\nВысадить рассаду",
+      goGameButton: "Старт сезона: высадить рассаду",
       varieties: deepClone(VARIETIES),
       scenarios: [
         { id: "greenhouse", name: "Теплица", desc: "Жара и духота" },
@@ -254,6 +292,10 @@ function buildDefaultContent() {
       timerSeconds: 60,
       stageNames: deepClone(STAGE_NAMES),
       steps: {
+        loved_greenhouse: deepClone(STEP_EVENTS_LOVED),
+        loved_ground: deepClone(STEP_EVENTS_LOVED),
+        giant_greenhouse: deepClone(STEP_EVENTS_GIANT),
+        giant_ground: deepClone(STEP_EVENTS_GIANT),
         loved: deepClone(STEP_EVENTS_LOVED),
         giant: deepClone(STEP_EVENTS_GIANT),
       },
@@ -305,10 +347,11 @@ function buildDefaultContent() {
 function loadPublishedContent(defaultContent) {
   try {
     const raw = localStorage.getItem(STORAGE_PUBLISHED_KEY);
-    if (!raw) return deepClone(defaultContent);
-    return JSON.parse(raw);
+    if (!raw) return normalizeContentShape(defaultContent);
+    const parsed = JSON.parse(raw);
+    return normalizeContentShape(deepMerge(defaultContent, parsed), parsed);
   } catch {
-    return deepClone(defaultContent);
+    return normalizeContentShape(defaultContent);
   }
 }
 
@@ -316,7 +359,8 @@ function getPublishedPatch() {
   try {
     const raw = localStorage.getItem(STORAGE_PUBLISHED_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return normalizeContentShape(parsed, parsed);
   } catch {
     return null;
   }
@@ -327,21 +371,22 @@ async function loadStaticContent(defaultContent) {
     const response = await fetch(`${STATIC_CONTENT_FILE}?v=${BUILD_VERSION}`, { cache: "no-store" });
     if (!response.ok) return deepClone(defaultContent);
     const parsed = await response.json();
-    const merged = deepMerge(defaultContent, parsed);
+    const merged = normalizeContentShape(deepMerge(defaultContent, parsed), parsed);
     validateAdminContentShape(merged);
     return merged;
   } catch {
-    return deepClone(defaultContent);
+    return normalizeContentShape(defaultContent);
   }
 }
 
 function getDraftContent(defaultContent) {
   try {
     const raw = localStorage.getItem(STORAGE_DRAFT_KEY);
-    if (!raw) return deepClone(defaultContent);
-    return JSON.parse(raw);
+    if (!raw) return normalizeContentShape(defaultContent);
+    const parsed = JSON.parse(raw);
+    return normalizeContentShape(deepMerge(defaultContent, parsed), parsed);
   } catch {
-    return deepClone(defaultContent);
+    return normalizeContentShape(defaultContent);
   }
 }
 
@@ -443,6 +488,7 @@ async function githubFetchJson(url, token, options = {}) {
 async function publishContentToGitHub() {
   try {
     readAdminFormToContent();
+    ADMIN_CONTENT = normalizeContentShape(ADMIN_CONTENT);
     const settings = getGitHubSettingsFromForm();
     if (!settings.owner || !settings.repo || !settings.branch || !settings.path || !settings.token) {
       throw new Error("Заполни owner/repo/branch/path/token для GitHub публикации.");
@@ -506,10 +552,10 @@ function scheduleAdminAutosave() {
 }
 
 function applyContent(content) {
-  CONTENT = deepClone(content);
+  CONTENT = normalizeContentShape(content, content);
   STAGE_NAMES.splice(0, STAGE_NAMES.length, ...CONTENT.game.stageNames);
-  STEP_EVENTS_LOVED.splice(0, STEP_EVENTS_LOVED.length, ...CONTENT.game.steps.loved);
-  STEP_EVENTS_GIANT.splice(0, STEP_EVENTS_GIANT.length, ...CONTENT.game.steps.giant);
+  STEP_EVENTS_LOVED.splice(0, STEP_EVENTS_LOVED.length, ...CONTENT.game.steps.loved_greenhouse);
+  STEP_EVENTS_GIANT.splice(0, STEP_EVENTS_GIANT.length, ...CONTENT.game.steps.giant_greenhouse);
   VARIETIES.loved = deepClone(CONTENT.setup.varieties.loved);
   VARIETIES.giant = deepClone(CONTENT.setup.varieties.giant);
 
@@ -672,7 +718,8 @@ function moodLabel(mood) {
 }
 
 function getStepEvents() {
-  return STATE.variety === "giant" ? STEP_EVENTS_GIANT : STEP_EVENTS_LOVED;
+  const steps = CONTENT?.game?.steps || {};
+  return steps[getStepVariantKey()] || steps[STATE.variety] || (STATE.variety === "giant" ? STEP_EVENTS_GIANT : STEP_EVENTS_LOVED);
 }
 
 function getTotalSteps() {
@@ -1355,7 +1402,7 @@ function initAdminOptionDnD() {
 let ADMIN_CONTENT = null;
 
 function getSelectedAdminStep() {
-  const variety = nodes.adminVariety?.value || "loved";
+  const variety = nodes.adminVariety?.value || STEP_VARIANTS[0].id;
   const index = Number(nodes.adminStep?.value || 0);
   const steps = ADMIN_CONTENT?.game?.steps?.[variety];
   if (!steps || !steps[index]) return null;
@@ -1364,7 +1411,7 @@ function getSelectedAdminStep() {
 
 function fillAdminStepSelect() {
   if (!nodes.adminStep || !ADMIN_CONTENT) return;
-  const variety = nodes.adminVariety?.value || "loved";
+  const variety = nodes.adminVariety?.value || STEP_VARIANTS[0].id;
   const steps = ADMIN_CONTENT.game.steps[variety] || [];
   nodes.adminStep.innerHTML = steps.map((_, idx) => `<option value="${idx}">Этап ${idx + 1}</option>`).join("");
   renderAdminStepTabs();
@@ -1486,7 +1533,7 @@ function readAdminFormToContent() {
 }
 
 function fillAdminEditorWithDraft(defaultContent) {
-  ADMIN_CONTENT = getDraftContent(defaultContent);
+  ADMIN_CONTENT = normalizeContentShape(getDraftContent(defaultContent));
   applyGitHubSettingsToForm();
   fillAdminGeneralFields();
   fillAdminStepSelect();
@@ -1496,7 +1543,9 @@ function fillAdminEditorWithDraft(defaultContent) {
 }
 
 function validateAdminContentShape(content) {
-  if (!content?.game?.steps?.loved || !content?.game?.steps?.giant) {
+  const steps = content?.game?.steps || {};
+  const hasAllVariants = STEP_VARIANTS.every(({ id }) => Array.isArray(steps[id]));
+  if (!hasAllVariants) {
     throw new Error("Неверный формат JSON: отсутствуют этапы.");
   }
 }
@@ -1504,6 +1553,7 @@ function validateAdminContentShape(content) {
 function saveDraftFromEditor(source = "manual") {
   try {
     readAdminFormToContent();
+    ADMIN_CONTENT = normalizeContentShape(ADMIN_CONTENT);
     localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
     setAdminUnsaved(false);
     if (source === "autosave") {
@@ -1519,6 +1569,7 @@ function saveDraftFromEditor(source = "manual") {
 function publishFromEditor() {
   try {
     readAdminFormToContent();
+    ADMIN_CONTENT = normalizeContentShape(ADMIN_CONTENT);
     localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
     localStorage.setItem(STORAGE_PUBLISHED_KEY, JSON.stringify(ADMIN_CONTENT));
     setAdminUnsaved(false);
@@ -1538,6 +1589,7 @@ function publishFromEditor() {
 function exportAdminJson() {
   try {
     readAdminFormToContent();
+    ADMIN_CONTENT = normalizeContentShape(ADMIN_CONTENT);
     const blob = new Blob([JSON.stringify(ADMIN_CONTENT, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1556,8 +1608,9 @@ function importAdminJsonFromFile(file) {
   reader.onload = () => {
     try {
       const parsed = JSON.parse(String(reader.result || ""));
-      validateAdminContentShape(parsed);
-      ADMIN_CONTENT = parsed;
+      const normalized = normalizeContentShape(parsed, parsed);
+      validateAdminContentShape(normalized);
+      ADMIN_CONTENT = normalized;
       fillAdminGeneralFields();
       fillAdminStepSelect();
       fillAdminStepFields();
