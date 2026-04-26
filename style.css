@@ -939,6 +939,17 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 }
 
 @media (max-width: 480px) {
+  body::before {
+    content: "MOBILE CSS TEST";
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 9999;
+    background: red;
+    color: white;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
   .basket-panel {
     width: 230px;
     transform: translateX(calc(-50% - 5px));
