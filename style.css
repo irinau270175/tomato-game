@@ -929,7 +929,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(242px, 44dvh, 340px);
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 230%; background-position: 50% 100%; }
+  .live-basket { background-size: 212%; background-position: 50% 100%; }
   .quick { min-height: 50px; font-size: 1rem; }
   .basket-tomato { width: 28px; height: 31px; }
   .basket-tomato::before { top: -3px; width: 11px; height: 6px; }
@@ -961,7 +961,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 238%; background-position: 50% 100%; }
+  .live-basket { background-size: 216%; background-position: 50% 100%; }
   .basket-tomato { width: 26px; height: 29px; }
   .basket-tomato::before { top: -3px; width: 10px; height: 5px; }
 }
