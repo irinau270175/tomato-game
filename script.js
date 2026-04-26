@@ -7,6 +7,14 @@ const UI_ASSETS = {
   basket: "assets/ui/basket.webp",
   flyTomato: "assets/ui/fly-tomato.webp",
 };
+const growSound = new Audio("sounds/grow.mp3");
+const dropSound = new Audio("sounds/drop.mp3");
+const winSound = new Audio("sounds/win.mp3");
+const loseSound = new Audio("sounds/lose.mp3");
+growSound.volume = 0.4;
+dropSound.volume = 0.5;
+winSound.volume = 0.5;
+loseSound.volume = 0.5;
 const PREPARED = {
   frames: {},
   ui: {},
@@ -166,6 +174,7 @@ const STATE = {
   preloaded: {},
 };
 let timerIntervalId = null;
+let lastRenderedStage = -1;
 const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
@@ -950,6 +959,11 @@ function updatePlantVisual(withReaction = false) {
   STATE.mood = mood;
   const progress = STATE.step / Math.max(getTotalSteps() - 1, 1);
   const stage = clamp(Math.floor(progress * 6), 0, 6);
+  if (lastRenderedStage !== -1 && stage !== lastRenderedStage) {
+    growSound.currentTime = 0;
+    growSound.play().catch(() => {});
+  }
+  lastRenderedStage = stage;
   nodes.plant.className = `plant stage-${stage} mood-${mood} variety-${STATE.variety || "loved"} fruiting use-sprite`;
   nodes.plant.style.setProperty("--growth", progress.toFixed(3));
   const variety = STATE.variety || "loved";
@@ -1037,6 +1051,8 @@ function animateTomatoToBasket() {
   setTimeout(() => {
     tomato.remove();
     addTomatoToBasket(Math.max(STATE.tomatoes - 1, 0));
+    dropSound.currentTime = 0;
+    dropSound.play().catch(() => {});
     nodes.liveBasket.classList.add("bounce");
     setTimeout(() => nodes.liveBasket.classList.remove("bounce"), 320);
   }, 1300);
@@ -1066,6 +1082,8 @@ function playStep() {
     );
   } else {
     applyWrongStep();
+    loseSound.currentTime = 0;
+    loseSound.play().catch(() => {});
     setReactionMessage(
       preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани"),
       { alert: false, pulse: true, color: "#a53a36" },
@@ -1105,6 +1123,13 @@ function finishGame(options = {}) {
   const { noBurst = false, timeout = false } = options;
   stopTimer();
   showScreen("game");
+  if (timeout || STATE.mood === "dead") {
+    loseSound.currentTime = 0;
+    loseSound.play().catch(() => {});
+  } else {
+    winSound.currentTime = 0;
+    winSound.play().catch(() => {});
+  }
   const archetype = getArchetype();
   const level = getFinalLevel();
   const variety = VARIETIES[STATE.variety];
@@ -1181,6 +1206,7 @@ function playVictoryBurst(level) {
 }
 
 async function startGame() {
+  lastRenderedStage = -1;
   STATE.step = 0;
   STATE.health = 70;
   STATE.stress = 26;
