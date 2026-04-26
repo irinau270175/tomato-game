@@ -1123,7 +1123,8 @@ function finishGame(options = {}) {
   const { noBurst = false, timeout = false } = options;
   stopTimer();
   showScreen("game");
-  const passedSeason = !timeout && STATE.mood !== "dead" && STATE.tomatoes >= getTotalSteps();
+  const score = STATE.tomatoes;
+  const passedSeason = !timeout && STATE.mood !== "dead" && score === 12;
   if (passedSeason) {
     winSound.currentTime = 0;
     winSound.play().catch(() => {});
@@ -1165,7 +1166,7 @@ function finishGame(options = {}) {
   }
   setShareStatus("");
   if (nodes.seasonOverlay) nodes.seasonOverlay.classList.add("season-overlay--show");
-  if (noBurst) {
+  if (noBurst || !passedSeason) {
     if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
   } else {
     playVictoryBurst(level);
