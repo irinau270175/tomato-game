@@ -71,6 +71,7 @@ const nodes = {
   giantFruit: document.getElementById("giant-fruit"),
   basketPanel: document.querySelector(".basket-panel"),
   liveBasket: document.getElementById("live-basket"),
+  basketDebug: document.getElementById("basket-debug"),
   liveCount: document.getElementById("live-count"),
   timerValue: document.getElementById("timer-value"),
   quickActions: document.getElementById("quick-actions"),
@@ -172,7 +173,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-3";
+const BUILD_VERSION = "2026-04-26-4";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -878,27 +879,16 @@ function calibrateSceneLayout() {
 
 function logBasketDiagnostics(source = "") {
   const basketPanel = nodes.basketPanel || nodes.liveBasket?.closest(".basket-panel");
-  if (!basketPanel || !nodes.liveBasket) return;
+  if (!basketPanel || !nodes.liveBasket || !nodes.basketDebug) return;
   const panelStyle = getComputedStyle(basketPanel);
   const basketStyle = getComputedStyle(nodes.liveBasket);
-  console.log({
-    source,
-    viewport: {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      dpr: window.devicePixelRatio || 1,
-    },
-    basketPanel: {
-      width: panelStyle.width,
-      height: panelStyle.height,
-    },
-    liveBasket: {
-      width: basketStyle.width,
-      height: basketStyle.height,
-      backgroundSize: basketStyle.backgroundSize,
-      backgroundPosition: basketStyle.backgroundPosition,
-    },
-  });
+  nodes.basketDebug.textContent = [
+    `${source || "basket-diagnostics"}`,
+    `basketPanel: ${panelStyle.width} × ${panelStyle.height}`,
+    `liveBasket: ${basketStyle.width} × ${basketStyle.height}`,
+    `backgroundSize: ${basketStyle.backgroundSize}`,
+    `backgroundPosition: ${basketStyle.backgroundPosition}`,
+  ].join("\n");
 }
 
 function collapseMobileBrowserBar() {
