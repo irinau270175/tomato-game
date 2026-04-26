@@ -878,9 +878,9 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     --plant-height: min(232px, 56vw);
     --plant-bottom: 22px;
     --basket-left: 27.8%;
-    --basket-width: min(122px, 28vw);
-    --basket-height: min(86px, 18vw);
-    --basket-bottom: 58px;
+    --basket-width: min(132px, 31vw);
+    --basket-height: min(92px, 21vw);
+    --basket-bottom: 56px;
     --plant-grow-w: 66px;
     --plant-grow-h: 98px;
     min-height: clamp(248px, 45svh, 360px);
@@ -896,7 +896,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     padding: 5px 7px;
   }
   .scene-chip strong { font-size: .95rem; }
-  .live-basket { background-size: 96%; }
+  .live-basket { background-size: 100%; }
   .setup-grid { grid-template-columns: 1fr; }
   .scene { min-height: clamp(248px, 45svh, 360px); min-height: clamp(248px, 45dvh, 360px); }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
@@ -921,15 +921,15 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-width: min(176px, 44vw);
     --plant-height: min(232px, 58vw);
-    --basket-width: min(116px, 29vw);
-    --basket-height: min(84px, 20vw);
+    --basket-width: min(126px, 31vw);
+    --basket-height: min(90px, 21vw);
     --plant-grow-w: 62px;
     --plant-grow-h: 92px;
     min-height: clamp(242px, 44svh, 340px);
     min-height: clamp(242px, 44dvh, 340px);
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 92%; }
+  .live-basket { background-size: 96%; }
   .quick { min-height: 50px; font-size: 1rem; }
   .basket-tomato { width: 28px; height: 31px; }
   .basket-tomato::before { top: -3px; width: 11px; height: 6px; }
@@ -953,15 +953,15 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   .scene {
     --plant-width: min(168px, 43vw);
     --plant-height: min(222px, 56vw);
-    --basket-width: min(110px, 26vw);
-    --basket-height: min(78px, 18vw);
+    --basket-width: min(118px, 28vw);
+    --basket-height: min(84px, 19vw);
     --plant-grow-w: 58px;
     --plant-grow-h: 86px;
     min-height: clamp(236px, 43svh, 320px);
     min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 88%; }
+  .live-basket { background-size: 92%; }
   .basket-tomato { width: 26px; height: 29px; }
   .basket-tomato::before { top: -3px; width: 10px; height: 5px; }
 }

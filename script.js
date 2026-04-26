@@ -74,6 +74,7 @@ const nodes = {
   timerValue: document.getElementById("timer-value"),
   quickActions: document.getElementById("quick-actions"),
   nextStepBtn: document.getElementById("next-step-btn"),
+  captureBtn: document.getElementById("capture-btn"),
   archType: document.getElementById("arch-type"),
   storyMeta: document.getElementById("story-meta"),
   storyResult: document.getElementById("story-result"),
@@ -171,7 +172,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-25-1";
+const BUILD_VERSION = "2026-04-26-1";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -447,15 +448,28 @@ async function publishContentToGitHub() {
     }
 
     const jsonText = JSON.stringify(ADMIN_CONTENT, null, 2);
-    await githubFetchJson(url, settings.token, {
-      method: "PUT",
-      body: JSON.stringify({
-        message: `chore: update content via admin (${new Date().toISOString()})`,
-        content: toBase64Unicode(jsonText),
-        branch: settings.branch,
-        ...(sha ? { sha } : {}),
-      }),
+    const publishBody = (shaValue) => ({
+      message: `chore: update content via admin (${new Date().toISOString()})`,
+      content: toBase64Unicode(jsonText),
+      branch: settings.branch,
+      ...(shaValue ? { sha: shaValue } : {}),
     });
+
+    try {
+      await githubFetchJson(url, settings.token, {
+        method: "PUT",
+        body: JSON.stringify(publishBody(sha)),
+      });
+    } catch (error) {
+      const msg = String(error?.message || "");
+      const isShaConflict = /sha|does not match|409/i.test(msg);
+      if (!isShaConflict) throw error;
+      const fresh = await githubFetchJson(`${url}?ref=${encodeURIComponent(settings.branch)}`, settings.token);
+      await githubFetchJson(url, settings.token, {
+        method: "PUT",
+        body: JSON.stringify(publishBody(fresh?.sha || null)),
+      });
+    }
 
     localStorage.setItem(STORAGE_DRAFT_KEY, JSON.stringify(ADMIN_CONTENT));
     localStorage.setItem(STORAGE_PUBLISHED_KEY, JSON.stringify(ADMIN_CONTENT));
@@ -820,7 +834,11 @@ function renderSetup() {
 }
 
 function renderActions() {
-  const stepEvent = getStepEvents()[STATE.step];
+  const stepEvent = getStepEvents()[clamp(STATE.step, 0, Math.max(getStepEvents().length - 1, 0))];
+  if (!stepEvent || !Array.isArray(stepEvent.options)) {
+    nodes.quickActions.innerHTML = "";
+    return;
+  }
   nodes.quickActions.innerHTML = stepEvent.options.map((option, idx) => {
     const active = STATE.selectedActionId === idx ? "quick--active" : "";
     return `<button class="quick ${active}" data-action-id="${idx}">${option}</button>`;
@@ -828,9 +846,50 @@ function renderActions() {
 }
 
 function renderStepContext() {
-  const stepEvent = getStepEvents()[STATE.step];
+  const stepEvent = getStepEvents()[clamp(STATE.step, 0, Math.max(getStepEvents().length - 1, 0))];
+  if (!stepEvent) {
+    nodes.stateLine.textContent = "Состояние: —";
+    nodes.adviceLine.textContent = "Совет: —";
+    return;
+  }
   nodes.stateLine.textContent = preventOrphans(stepEvent.state);
   nodes.adviceLine.textContent = preventOrphans(`Совет: ${stepEvent.advice}`);
+}
+
+async function captureGameScreenshot() {
+  try {
+    const target = nodes.scene || document.getElementById("screen-game");
+    if (!target) throw new Error("Сцена не найдена.");
+    const html2canvasFn = window.html2canvas;
+    if (typeof html2canvasFn !== "function") {
+      throw new Error("Модуль скрина не загрузился. Обнови страницу и попробуй снова.");
+    }
+    const canvas = await html2canvasFn(target, {
+      useCORS: true,
+      backgroundColor: null,
+      scale: Math.min(window.devicePixelRatio || 1, 2),
+    });
+    const fileName = `tomato-game-${Date.now()}.png`;
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Не удалось собрать изображение.");
+    const file = new File([blob], fileName, { type: "image/png" });
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Скрин игры" });
+      setShareStatus("Скрин готов: отправлен через меню Поделиться.");
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShareStatus("Скрин сохранён в файл.");
+  } catch (error) {
+    setShareStatus(`Не удалось сделать скрин: ${error.message}`);
+  }
 }
 
 function calibrateSceneLayout() {
@@ -883,18 +942,18 @@ function getBasketSlot(index) {
     { x: 0.59, y: 0.35, s: 0.94, a: 5 },
   ];
   const mobilePile = [
-    { x: 0.31, y: 0.58, s: 1.05, a: -8 },
-    { x: 0.40, y: 0.55, s: 1.10, a: -4 },
-    { x: 0.49, y: 0.54, s: 1.12, a: 0 },
-    { x: 0.58, y: 0.55, s: 1.10, a: 4 },
-    { x: 0.67, y: 0.58, s: 1.05, a: 8 },
-    { x: 0.35, y: 0.50, s: 0.98, a: -7 },
-    { x: 0.44, y: 0.47, s: 1.02, a: -3 },
-    { x: 0.53, y: 0.46, s: 1.03, a: 2 },
-    { x: 0.62, y: 0.49, s: 0.99, a: 6 },
-    { x: 0.41, y: 0.42, s: 0.92, a: -5 },
-    { x: 0.50, y: 0.40, s: 0.95, a: 0 },
-    { x: 0.59, y: 0.42, s: 0.92, a: 5 },
+    { x: 0.31, y: 0.66, s: 1.05, a: -8 },
+    { x: 0.40, y: 0.63, s: 1.10, a: -4 },
+    { x: 0.49, y: 0.62, s: 1.12, a: 0 },
+    { x: 0.58, y: 0.63, s: 1.10, a: 4 },
+    { x: 0.67, y: 0.66, s: 1.05, a: 8 },
+    { x: 0.35, y: 0.57, s: 0.98, a: -7 },
+    { x: 0.44, y: 0.54, s: 1.02, a: -3 },
+    { x: 0.53, y: 0.53, s: 1.03, a: 2 },
+    { x: 0.62, y: 0.56, s: 0.99, a: 6 },
+    { x: 0.41, y: 0.48, s: 0.92, a: -5 },
+    { x: 0.50, y: 0.46, s: 0.95, a: 0 },
+    { x: 0.59, y: 0.48, s: 0.92, a: 5 },
   ];
   const isMobile = window.matchMedia("(max-width: 900px)").matches || window.matchMedia("(hover: none) and (pointer: coarse)").matches;
   const pile = isMobile ? mobilePile : desktopPile;
@@ -1514,6 +1573,7 @@ function bindEvents() {
   });
 
   nodes.nextStepBtn.addEventListener("click", playStep);
+  if (nodes.captureBtn) nodes.captureBtn.addEventListener("click", captureGameScreenshot);
 
   if (nodes.shareBtn) {
     nodes.shareBtn.addEventListener("click", shareGame);
