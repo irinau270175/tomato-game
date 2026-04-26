@@ -407,7 +407,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 .live-basket {
   width: 100%;
   height: var(--basket-height);
-  background-size: 220%;
+  background-size: 205%;
   background-position: 50% 100%;
   background-repeat: no-repeat;
   transform-origin: center bottom;
@@ -416,6 +416,10 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   overflow: visible;
 }
 .live-basket.bounce { animation: basketBounce .35s ease; }
+
+@media (min-width: 901px) {
+  .live-basket .basket-tomato { margin-left: 8px; }
+}
 
 .fly-tomato {
   position: fixed;
@@ -881,7 +885,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     padding: 5px 7px;
   }
   .scene-chip strong { font-size: .95rem; }
-  .live-basket { background-size: 100%; }
+  .live-basket { background-size: 220%; background-position: 50% 100%; }
   .setup-grid { grid-template-columns: 1fr; }
   .scene { min-height: clamp(248px, 45svh, 360px); min-height: clamp(248px, 45dvh, 360px); }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
@@ -914,7 +918,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(242px, 44dvh, 340px);
   }
   .plant { bottom: var(--plant-bottom); transform: translateX(-50%); }
-  .live-basket { background-size: 96%; }
+  .live-basket { background-size: 212%; background-position: 50% 100%; }
   .quick { min-height: 48px; font-size: .98rem; }
   .basket-tomato { width: 38px; height: 41px; }
   .basket-tomato::before { top: -4px; width: 15px; height: 8px; }
@@ -935,6 +939,7 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 }
 
 @media (max-width: 480px) {
+  .basket-panel { transform: translateX(calc(-50% - 5px)); }
   .scene {
     --plant-width: min(168px, 43vw);
     --plant-height: min(222px, 56vw);
@@ -946,5 +951,6 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 92%; }
+  .live-basket { background-size: 216%; background-position: 50% 100%; }
+  .live-basket .basket-tomato { margin-top: -14px; margin-left: 6px; }
 }
