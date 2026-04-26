@@ -939,21 +939,9 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 }
 
 @media (max-width: 480px) {
-  body::before {
-    content: "MOBILE CSS TEST";
-    position: fixed;
-    top: 8px;
-    left: 8px;
-    z-index: 9999;
-    background: red;
-    color: white;
-    padding: 6px 8px;
-    font-size: 14px;
-  }
   .basket-panel {
-    width: 230px;
+    width: 190px;
     transform: translateX(calc(-50% - 5px));
-    outline: 2px solid red;
   }
   .scene {
     --plant-width: min(168px, 43vw);
@@ -967,11 +955,10 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
   }
   .plant { bottom: var(--plant-bottom); }
   .live-basket {
-    width: 230px;
-    height: 155px;
-    background-size: 300%;
+    width: 190px;
+    height: 130px;
+    background-size: 245%;
     background-position: 50% 100%;
-    outline: 2px solid blue;
   }
   .live-basket .basket-tomato { margin-top: -14px; margin-left: 10px; }
 }
