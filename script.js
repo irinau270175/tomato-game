@@ -74,7 +74,6 @@ const nodes = {
   timerValue: document.getElementById("timer-value"),
   quickActions: document.getElementById("quick-actions"),
   nextStepBtn: document.getElementById("next-step-btn"),
-  captureBtn: document.getElementById("capture-btn"),
   archType: document.getElementById("arch-type"),
   storyMeta: document.getElementById("story-meta"),
   storyResult: document.getElementById("story-result"),
@@ -172,7 +171,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-1";
+const BUILD_VERSION = "2026-04-26-2";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -856,41 +855,6 @@ function renderStepContext() {
   nodes.adviceLine.textContent = preventOrphans(`Совет: ${stepEvent.advice}`);
 }
 
-async function captureGameScreenshot() {
-  try {
-    const target = nodes.scene || document.getElementById("screen-game");
-    if (!target) throw new Error("Сцена не найдена.");
-    const html2canvasFn = window.html2canvas;
-    if (typeof html2canvasFn !== "function") {
-      throw new Error("Модуль скрина не загрузился. Обнови страницу и попробуй снова.");
-    }
-    const canvas = await html2canvasFn(target, {
-      useCORS: true,
-      backgroundColor: null,
-      scale: Math.min(window.devicePixelRatio || 1, 2),
-    });
-    const fileName = `tomato-game-${Date.now()}.png`;
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-    if (!blob) throw new Error("Не удалось собрать изображение.");
-    const file = new File([blob], fileName, { type: "image/png" });
-
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Скрин игры" });
-      setShareStatus("Скрин готов: отправлен через меню Поделиться.");
-      return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
-    setShareStatus("Скрин сохранён в файл.");
-  } catch (error) {
-    setShareStatus(`Не удалось сделать скрин: ${error.message}`);
-  }
-}
 
 function calibrateSceneLayout() {
   const scene = nodes.scene;
@@ -1573,7 +1537,6 @@ function bindEvents() {
   });
 
   nodes.nextStepBtn.addEventListener("click", playStep);
-  if (nodes.captureBtn) nodes.captureBtn.addEventListener("click", captureGameScreenshot);
 
   if (nodes.shareBtn) {
     nodes.shareBtn.addEventListener("click", shareGame);
