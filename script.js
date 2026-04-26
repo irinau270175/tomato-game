@@ -15,6 +15,9 @@ growSound.volume = 0.4;
 dropSound.volume = 0.5;
 winSound.volume = 0.5;
 loseSound.volume = 0.5;
+const ACTION_PROMPT_TEXT = "ВЫБЕРИ ДЕЙСТВИЕ ДЛЯ ЭТОГО ЭТАПА";
+const GOOD_MOVE_TEXT = "ХОРОШИЙ ХОД";
+const BAD_MOVE_TEXT = "ПОКА ТЕРПИМО, НО НА ГРАНИ";
 const PREPARED = {
   frames: {},
   ui: {},
@@ -177,6 +180,7 @@ const STATE = {
   timedOut: false,
   selectedActionId: null,
   mood: "healthy",
+  displayState: "healthy",
   finalText: "",
   preloaded: {},
   finished: false,
@@ -189,7 +193,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-start-admin-1";
+const BUILD_VERSION = "2026-04-27-text-display-1";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -624,9 +628,14 @@ function setShareStatus(text) {
 
 function setReactionMessage(text, options = {}) {
   const { alert = false, pulse = true, color = "" } = options;
+  const detail = String(text || "").trim();
+  const normalizedDetail = detail.toLocaleUpperCase("ru-RU");
+  const message = normalizedDetail && normalizedDetail !== ACTION_PROMPT_TEXT
+    ? `${ACTION_PROMPT_TEXT}\n${normalizedDetail}`
+    : ACTION_PROMPT_TEXT;
   const lines = [nodes.reactionLine, nodes.actionReactionLine].filter(Boolean);
   lines.forEach((line) => {
-    line.textContent = text;
+    line.textContent = message;
     line.classList.toggle("reaction-line--alert", alert);
     line.classList.toggle("reaction-line--pulse", pulse);
     line.style.color = color || "";
@@ -706,15 +715,7 @@ function getMood() {
 }
 
 function moodLabel(mood) {
-  return {
-    healthy: "Здоровый",
-    tired: "Уставший",
-    stressed: "Стресс",
-    waterlow: "Нехватка воды",
-    overheat: "Перегрев",
-    critical: "Критическое",
-    dead: "Погиб",
-  }[mood] || "Состояние";
+  return STATE.displayState === "stress" ? "СТРЕСС" : "ЗДОРОВЫЙ";
 }
 
 function getStepEvents() {
@@ -1128,21 +1129,23 @@ async function playStep() {
 
   if (correct) {
     applyCorrectStep();
+    STATE.displayState = "healthy";
     STATE.tomatoes += 1;
     nodes.liveCount.textContent = `🍅 ${STATE.tomatoes}`;
     tomatoDrop = animateTomatoToBasket();
     setReactionMessage(
-      preventOrphans(CONTENT?.game?.messages?.goodMove || "Хороший ход"),
+      GOOD_MOVE_TEXT,
       { alert: false, pulse: true, color: "#1d6f41" },
     );
   } else {
     applyWrongStep();
+    STATE.displayState = "stress";
     if (!isFinalStep && STATE.health > 8) {
       loseSound.currentTime = 0;
       loseSound.play().catch(() => {});
     }
     setReactionMessage(
-      preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани"),
+      BAD_MOVE_TEXT,
       { alert: false, pulse: true, color: "#a53a36" },
     );
   }
@@ -1189,6 +1192,8 @@ function finishGame(options = {}) {
   showScreen("game");
   const score = STATE.tomatoes;
   const isWin = score === 12;
+  STATE.displayState = isWin ? "healthy" : "stress";
+  nodes.stateLabel.textContent = moodLabel(STATE.mood);
   if (isWin) {
     winSound.currentTime = 0;
     winSound.play().catch(() => {});
@@ -1208,15 +1213,11 @@ function finishGame(options = {}) {
 
   nodes.archType.textContent = archetype.title;
   const metaLead = (CONTENT?.final?.metaLead || "").trim();
-  const metaBody = `${variety.name} • ${scenario} • 🍅 ${STATE.tomatoes}/${getTotalSteps()}`;
+  const metaBody = `${variety.name} • ${scenario}`;
   nodes.storyMeta.textContent = preventOrphans(metaLead ? `${metaLead} ${metaBody}` : metaBody);
-  if (timeout) {
-    const lead = CONTENT?.final?.timeoutText || "Время вышло, куст завял. Итог";
-    nodes.storyResult.textContent = preventOrphans(`${lead}: ${level}.`);
-  } else {
-    const lead = CONTENT?.final?.resultText || "Итог";
-    nodes.storyResult.textContent = preventOrphans(`${archetype.phrase} ${lead}: ${level}.`);
-  }
+  nodes.storyResult.textContent = isWin
+    ? `Сезон завершен. Отличный результат! — ${score}/12`
+    : `Сезон завершен. Ты можешь лучше! — ${score}/12`;
 
   STATE.finalText =
 `Я прошёл(ла) "Выживи сезон с томатом" 🍅
@@ -1292,6 +1293,7 @@ async function startGame() {
   STATE.timedOut = false;
   STATE.selectedActionId = null;
   STATE.mood = "healthy";
+  STATE.displayState = "healthy";
   STATE.finished = false;
   try {
     await preloadVarietyAssets(STATE.variety);
@@ -1311,7 +1313,7 @@ async function startGame() {
 
   showScreen("game");
   setReactionMessage(
-    preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+    ACTION_PROMPT_TEXT,
     { alert: false, pulse: true, color: "#c7ffd8" },
   );
   renderTimer();
