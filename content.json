@@ -914,7 +914,7 @@
       "topGiant": "Гигантский урожай!"
     },
     "resultText": "Итог",
-    "timeoutText": "Время вышло, куст завял. Итог",
+    "timeoutText": "Время вышло. Итог",
     "timeoutResult": "Время вышло, куст завял. Итог: {{level}}.",
     "resultTemplate": "{{phrase}} Итог: {{level}}."
   }
