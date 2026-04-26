@@ -1226,8 +1226,11 @@ function finishGame(options = {}) {
 
   nodes.nextStepBtn.disabled = true;
   if (!timeout) {
+    const finishLine = isWin
+      ? "Сезон завершён. Отличная работа!"
+      : "Сезон завершён. Ты можешь лучше!";
     setReactionMessage(
-      preventOrphans(CONTENT?.game?.messages?.seasonDone || "Сезон завершён. Отличная работа!"),
+      finishLine,
       { alert: false, pulse: true, color: "#c7ffd8" },
     );
   }
