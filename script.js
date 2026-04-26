@@ -1123,12 +1123,13 @@ function finishGame(options = {}) {
   const { noBurst = false, timeout = false } = options;
   stopTimer();
   showScreen("game");
-  if (timeout || STATE.mood === "dead") {
-    loseSound.currentTime = 0;
-    loseSound.play().catch(() => {});
-  } else {
+  const passedSeason = !timeout && STATE.mood !== "dead" && STATE.tomatoes >= getTotalSteps();
+  if (passedSeason) {
     winSound.currentTime = 0;
     winSound.play().catch(() => {});
+  } else {
+    loseSound.currentTime = 0;
+    loseSound.play().catch(() => {});
   }
   const archetype = getArchetype();
   const level = getFinalLevel();
