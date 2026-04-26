@@ -421,13 +421,31 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
 .live-basket {
   width: 100%;
   height: var(--basket-height);
+  background-color: #e2cfae;
+  background-image:
+    linear-gradient(180deg, rgba(245, 234, 215, 0.92) 0%, rgba(220, 196, 165, 0.95) 38%, rgba(198, 168, 132, 0.96) 100%);
   background-size: 205%;
   background-position: 50% 100%;
-  background-repeat: no-repeat;
+  background-repeat: no-repeat, no-repeat;
   transform-origin: center bottom;
   position: relative;
   box-shadow: none;
   overflow: visible;
+}
+.live-basket::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse 120% 90% at 50% 78%, rgba(120, 86, 58, 0.45), transparent 58%),
+    linear-gradient(180deg, #f1e0cc 0%, #e3ccb0 40%, #c4a078 100%);
+  pointer-events: none;
+}
+.live-basket > * {
+  position: relative;
+  z-index: 1;
 }
 .live-basket.bounce { animation: basketBounce .35s ease; }
 
