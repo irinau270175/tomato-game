@@ -944,13 +944,13 @@ h1 { font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.05; margin-top: 6px; 
     --plant-width: min(168px, 43vw);
     --plant-height: min(222px, 56vw);
     --basket-width: min(116px, 28vw);
-    --basket-height: min(140px, 24vw);
+    --basket-height: min(158px, 28vw);
     --plant-grow-w: 58px;
     --plant-grow-h: 86px;
     min-height: clamp(236px, 43svh, 320px);
     min-height: clamp(236px, 43dvh, 320px);
   }
   .plant { bottom: var(--plant-bottom); }
-  .live-basket { background-size: 265%; background-position: 50% 100%; }
-  .live-basket .basket-tomato { margin-top: -10px; margin-left: 6px; }
+  .live-basket { background-size: 285%; background-position: 50% 100%; }
+  .live-basket .basket-tomato { margin-top: -10px; margin-left: 11px; }
 }
