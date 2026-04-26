@@ -172,15 +172,17 @@ const STATE = {
   mood: "healthy",
   finalText: "",
   preloaded: {},
+  finished: false,
 };
 let timerIntervalId = null;
 let lastRenderedStage = -1;
+let isStartingGame = false;
 const ADMIN_PASSWORD = "Tomato-Admin-2026";
 const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-26-restore-2";
+const BUILD_VERSION = "2026-04-26-final-logic-1";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -1048,17 +1050,20 @@ function animateTomatoToBasket() {
     tomato.style.transform = `translate(${dx}px, ${dy}px) scale(0.95)`;
   });
 
-  setTimeout(() => {
-    tomato.remove();
-    addTomatoToBasket(Math.max(STATE.tomatoes - 1, 0));
-    dropSound.currentTime = 0;
-    dropSound.play().catch(() => {});
-    nodes.liveBasket.classList.add("bounce");
-    setTimeout(() => nodes.liveBasket.classList.remove("bounce"), 320);
-  }, 1300);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      tomato.remove();
+      addTomatoToBasket(Math.max(STATE.tomatoes - 1, 0));
+      dropSound.currentTime = 0;
+      dropSound.play().catch(() => {});
+      nodes.liveBasket.classList.add("bounce");
+      setTimeout(() => nodes.liveBasket.classList.remove("bounce"), 320);
+      resolve();
+    }, 900);
+  });
 }
 
-function playStep() {
+async function playStep() {
   if (STATE.selectedActionId === null) {
     setReactionMessage(
       preventOrphans(CONTENT?.game?.messages?.chooseFirst || "Сначала выбери 1 вариант."),
@@ -1070,20 +1075,25 @@ function playStep() {
   applyEnvironmentPressure();
   const stepEvent = getStepEvents()[STATE.step];
   const correct = isActionCorrect(stepEvent, STATE.selectedActionId);
+  const isFinalStep = STATE.step + 1 >= getTotalSteps();
+  let tomatoDrop = null;
+  nodes.nextStepBtn.disabled = true;
 
   if (correct) {
     applyCorrectStep();
     STATE.tomatoes += 1;
     nodes.liveCount.textContent = `🍅 ${STATE.tomatoes}`;
-    animateTomatoToBasket();
+    tomatoDrop = animateTomatoToBasket();
     setReactionMessage(
       preventOrphans(CONTENT?.game?.messages?.goodMove || "Хороший ход"),
       { alert: false, pulse: true, color: "#1d6f41" },
     );
   } else {
     applyWrongStep();
-    loseSound.currentTime = 0;
-    loseSound.play().catch(() => {});
+    if (!isFinalStep && STATE.health > 8) {
+      loseSound.currentTime = 0;
+      loseSound.play().catch(() => {});
+    }
     setReactionMessage(
       preventOrphans(CONTENT?.game?.messages?.borderline || "Пока терпимо, но на грани"),
       { alert: false, pulse: true, color: "#a53a36" },
@@ -1097,11 +1107,16 @@ function playStep() {
 
   STATE.step += 1;
   STATE.selectedActionId = null;
-  if (STATE.step >= getTotalSteps()) return finishGame();
+  if (STATE.step >= getTotalSteps()) {
+    if (tomatoDrop) await tomatoDrop;
+    return finishGame();
+  }
 
+  if (tomatoDrop) await tomatoDrop;
   renderStepContext();
   renderActions();
   updatePlantVisual(false);
+  nodes.nextStepBtn.disabled = false;
 }
 
 function getArchetype() {
@@ -1120,15 +1135,22 @@ function getFinalLevel() {
 }
 
 function finishGame(options = {}) {
+  if (STATE.finished) return;
+  STATE.finished = true;
   const { noBurst = false, timeout = false } = options;
   stopTimer();
   showScreen("game");
   const score = STATE.tomatoes;
-  const passedSeason = !timeout && STATE.mood !== "dead" && score === 12;
-  if (passedSeason) {
+  const isWin = score === 12;
+  if (isWin) {
     winSound.currentTime = 0;
     winSound.play().catch(() => {});
   } else {
+    STATE.health = 0;
+    STATE.stress = 100;
+    STATE.water = 0;
+    clampStats();
+    updatePlantVisual(false);
     loseSound.currentTime = 0;
     loseSound.play().catch(() => {});
   }
@@ -1166,7 +1188,7 @@ function finishGame(options = {}) {
   }
   setShareStatus("");
   if (nodes.seasonOverlay) nodes.seasonOverlay.classList.add("season-overlay--show");
-  if (noBurst || !passedSeason) {
+  if (noBurst || !isWin) {
     if (nodes.victoryBurst) nodes.victoryBurst.innerHTML = "";
   } else {
     playVictoryBurst(level);
@@ -1208,6 +1230,9 @@ function playVictoryBurst(level) {
 }
 
 async function startGame() {
+  if (isStartingGame) return;
+  isStartingGame = true;
+  nodes.goGameBtn.disabled = true;
   lastRenderedStage = -1;
   STATE.step = 0;
   STATE.health = 70;
@@ -1220,7 +1245,14 @@ async function startGame() {
   STATE.timedOut = false;
   STATE.selectedActionId = null;
   STATE.mood = "healthy";
-  await preloadVarietyAssets(STATE.variety);
+  STATE.finished = false;
+  try {
+    await preloadVarietyAssets(STATE.variety);
+  } catch (error) {
+    isStartingGame = false;
+    renderSetup();
+    throw error;
+  }
   nodes.liveCount.textContent = "🍅 0";
   nodes.liveBasket.innerHTML = "";
   nodes.liveBasket.style.backgroundImage = `url("${PREPARED.ui.basket || UI_ASSETS.basket}")`;
@@ -1240,6 +1272,7 @@ async function startGame() {
   renderStepContext();
   renderActions();
   updatePlantVisual(false);
+  isStartingGame = false;
 }
 
 function openAdminPanel() {
