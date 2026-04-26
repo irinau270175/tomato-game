@@ -15,9 +15,9 @@ growSound.volume = 0.4;
 dropSound.volume = 0.5;
 winSound.volume = 0.5;
 loseSound.volume = 0.5;
-const ACTION_PROMPT_TEXT = "ВЫБЕРИ ДЕЙСТВИЕ ДЛЯ ЭТОГО ЭТАПА";
-const GOOD_MOVE_TEXT = "ХОРОШИЙ ХОД";
-const BAD_MOVE_TEXT = "ПОКА ТЕРПИМО, НО НА ГРАНИ";
+const ACTION_PROMPT_TEXT = "Выбери действие для этого этапа";
+const GOOD_MOVE_TEXT = "Хороший ход";
+const BAD_MOVE_TEXT = "Пока терпимо, но на грани";
 const PREPARED = {
   frames: {},
   ui: {},
@@ -193,7 +193,7 @@ const STORAGE_DRAFT_KEY = "tomatoGame.contentDraft.v1";
 const STORAGE_PUBLISHED_KEY = "tomatoGame.contentPublished.v1";
 const STORAGE_GH_SETTINGS_KEY = "tomatoGame.githubPublish.v1";
 const STATIC_CONTENT_FILE = "content.json";
-const BUILD_VERSION = "2026-04-27-text-display-1";
+const BUILD_VERSION = "2026-04-27-text-display-2";
 let CONTENT = null;
 let adminAutosaveTimerId = null;
 let adminHasUnsavedChanges = false;
@@ -628,11 +628,7 @@ function setShareStatus(text) {
 
 function setReactionMessage(text, options = {}) {
   const { alert = false, pulse = true, color = "" } = options;
-  const detail = String(text || "").trim();
-  const normalizedDetail = detail.toLocaleUpperCase("ru-RU");
-  const message = normalizedDetail && normalizedDetail !== ACTION_PROMPT_TEXT
-    ? `${ACTION_PROMPT_TEXT}\n${normalizedDetail}`
-    : ACTION_PROMPT_TEXT;
+  const message = String(text || ACTION_PROMPT_TEXT).trim();
   const lines = [nodes.reactionLine, nodes.actionReactionLine].filter(Boolean);
   lines.forEach((line) => {
     line.textContent = message;
@@ -673,7 +669,7 @@ async function shareGame() {
 function startTimer() {
   stopTimer();
   setReactionMessage(
-    nodes.reactionLine?.textContent || preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+    ACTION_PROMPT_TEXT,
     { alert: false, pulse: true, color: "#c7ffd8" },
   );
   renderTimer();
@@ -715,7 +711,7 @@ function getMood() {
 }
 
 function moodLabel(mood) {
-  return STATE.displayState === "stress" ? "СТРЕСС" : "ЗДОРОВЫЙ";
+  return STATE.displayState === "stress" ? "Стресс" : "Здоровый";
 }
 
 function getStepEvents() {
@@ -1151,6 +1147,7 @@ async function playStep() {
   }
 
   clampStats();
+  nodes.stateLabel.textContent = moodLabel(STATE.mood);
   updatePlantVisual(true);
 
   if (STATE.mood === "dead") return finishGame();
@@ -1764,7 +1761,7 @@ function bindEvents() {
     if (nodes.seasonOverlay) nodes.seasonOverlay.classList.remove("season-overlay--show");
     setShareStatus("");
     setReactionMessage(
-      preventOrphans(CONTENT?.game?.messages?.chooseAction || "Выбери действие для этого этапа."),
+      ACTION_PROMPT_TEXT,
       { alert: false, pulse: false, color: "#c7ffd8" },
     );
     renderSetup();
